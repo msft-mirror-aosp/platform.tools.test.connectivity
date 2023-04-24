@@ -799,7 +799,6 @@ class LteBaseStation(BaseStation):
             raise CmxError("Wrong type of mimo mode")
 
         self._cell.set_num_crs_antenna_ports(mimo.value)
-        self._config_scheduler(dl_num_layers=MIMO_MAX_LAYER_MAPPING[mimo])
 
     def set_scheduling_mode(self,
                             mcs_dl=None,
