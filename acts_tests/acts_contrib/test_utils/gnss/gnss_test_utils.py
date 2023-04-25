@@ -1069,7 +1069,9 @@ def wait_n_mins_for_gnss_tracking(ad, begin_time, testtime, api_type="gnss",
         # add sleep here to avoid too many request and cause device not responding
         time.sleep(1)
 
-def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
+def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location,
+                             raninterval: bool = False, mininterval: int = 10,
+                             maxinterval: int = 40):
     """Run GNSS TTFF test with selected mode and parse the results.
 
     Args:
@@ -1082,7 +1084,12 @@ def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
     # Before running TTFF, we will run tracking and try to get first fixed.
     # But the TTFF before TTFF doesn't apply to any criteria, so we set a maximum value.
     process_gnss_by_gtw_gpstool(ad, criteria=FIRST_FIXED_MAX_WAITING_TIME)
-    ttff_start_time = start_ttff_by_gtw_gpstool(ad, mode, test_cycle)
+    ttff_start_time = start_ttff_by_gtw_gpstool(ad,
+                                                mode,
+                                                iteration=test_cycle,
+                                                raninterval=raninterval,
+                                                mininterval=mininterval,
+                                                maxinterval=maxinterval)
     ttff_data = process_ttff_by_gtw_gpstool(ad, ttff_start_time, true_location)
     result = check_ttff_data(ad, ttff_data, gnss_constant.TTFF_MODE.get(mode), criteria)
     asserts.assert_true(

@@ -260,9 +260,19 @@ class GnssFunctionTest(BaseTestClass):
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.log.info("Turn airplane mode on")
         toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
+        """
+        The change for arguments here is for b/277667310
+        Randomized interval is used for breaking CS GLNS only fix sequence.
+        """
         gutils.run_ttff_via_gtw_gpstool(
-            self.ad, mode, criteria, self.ttff_test_cycle, self.pixel_lab_location)
-        self.keep_logs()
+            self.ad,
+            mode,
+            criteria,
+            self.ttff_test_cycle,
+            self.pixel_lab_location,
+            raninterval=True,
+            mininterval=10,
+            maxinterval=20,)
 
     """ Test Cases """
 
