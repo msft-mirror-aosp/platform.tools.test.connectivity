@@ -2364,17 +2364,18 @@ def get_gps_process_and_kill_function_by_vendor(ad):
 
     Returns:
         killed_processes: What processes to be killed
-        kill_function: What method to be used for killing the process
+        functions: The methods for killing each process
     """
     if check_chipset_vendor_by_qualcomm(ad):
         ad.log.info("Triggered modem SSR")
-        kill_function = functools.partial(gnss_trigger_modem_ssr_by_mds, ad=ad)
-        killed_processes = ['SSR']
+        return [functools.partial(gnss_trigger_modem_ssr_by_mds, ad=ad)], ['ssr']
     else:
+        functions = []
         ad.log.info("Triggered restarting GPS daemons")
-        kill_function = functools.partial(restart_gps_daemons, ad=ad)
-        killed_processes = ['gpsd', 'scd', 'lhd']
-    return killed_processes, kill_function
+        for service in ['gpsd', 'scd', 'lhd']:
+            functions.append(
+                functools.partial(restart_gps_daemons, ad=ad, service=service))
+        return functions, ['gpsd', 'scd', 'lhd']
 
 
 def is_device_wearable(ad):
