@@ -149,7 +149,7 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
                 total_record_entries += 1
                 bandwidth = float(cols[bandwidth_val_idx])
                 self.log.debug('bandwidth: %f', bandwidth)
-                if abs(bandwidth-expected_bandwidth) > acceptable_difference:
+                if abs(bandwidth - expected_bandwidth) > acceptable_difference:
                     total_abnormal_entries += 1
         if not total_record_entries:
             raise RuntimeError('No tput data record found.')

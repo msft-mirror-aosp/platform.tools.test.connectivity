@@ -5,9 +5,9 @@ import time
 
 from acts import asserts
 from acts import signals
-from acts.controllers.cellular_lib import AndroidCellularDut
 import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
 from acts_contrib.test_utils.tel import tel_test_utils as telutils
+from acts_contrib.test_utils.power.cellular import modem_logs
 
 # TODO: b/261639867
 class AtUtil():
@@ -258,10 +258,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
         # preset UE.
         self.log.info(f'Bug report mode: {self.bug_report}')
-        if self.bug_report:
-            self.toggle_modem_log(True)
-        else:
-            self.toggle_modem_log(False)
+        self.toggle_modem_log(False)
         self.log.info('Installing mdstest app.')
         self.install_apk()
 
@@ -280,6 +277,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
         self.unpack_userparams(is_wifi_only_device=False)
 
+        # extract log only flag
+        self.unpack_userparams(collect_log_only=False)
         # get sdim type
         self.unpack_userparams(has_3gpp_sim=True)
 
@@ -304,7 +303,17 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
     def setup_test(self):
         try:
+            if self.collect_log_only:
+                self.log.info('Collect log only mode on.')
+                # set log mask
+                modem_logs.set_modem_log_profle(self.cellular_dut.ad, modem_logs.ModemLogProfile.LASSEN_TCP_DSP)
+                # start log
+                modem_logs.start_modem_logging(self.cellular_dut.ad)
             super().setup_test()
+            modem_log_dir = os.path.join(self.root_output_path, 'modem_log')
+            os.makedirs(modem_log_dir, exist_ok=True)
+            self.modem_log_path = os.path.join(modem_log_dir, self.test_name)
+            os.makedirs(self.modem_log_path, exist_ok=True)
         except BrokenPipeError:
             self.log.info('TA crashed test need retry.')
             self.need_retry = True
@@ -328,6 +337,22 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                     self.log.info(f'Always-on modem logging status is {new_state}.')
                     return
             raise RuntimeError(f'Fail to set modem logging to {new_state}.')
+
+    def collect_modem_log(self, out_path, duration: int=15):
+        # set log mask
+        modem_logs.set_modem_log_profle(self.cellular_dut.ad, modem_logs.ModemLogProfile.LASSEN_TCP_DSP)
+
+        # start log
+        modem_logs.start_modem_logging(self.cellular_dut.ad)
+        time.sleep(duration)
+        # stop log
+        modem_logs.stop_modem_logging(self.cellular_dut.ad)
+        try:
+            # pull log
+            modem_logs.pull_logs(self.cellular_dut.ad, out_path)
+        finally:
+            # clear log
+            modem_logs.clear_modem_logging(self.cellular_dut.ad)
 
     def install_apk(self):
         sleep_time = 3
@@ -553,6 +578,20 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             self._ADB_GET_ACTIVE_NETWORK)
 
     def teardown_test(self):
+        if self.collect_log_only:
+            try:
+                # stop log
+                modem_logs.stop_modem_logging(self.cellular_dut.ad)
+                # pull log
+                modem_logs.pull_logs(self.cellular_dut.ad, self.modem_log_path)
+            finally:
+                # clear log
+                modem_logs.clear_modem_logging(self.cellular_dut.ad)
+        else:
+            try:
+                self.collect_modem_log(self.modem_log_path)
+            except RuntimeError:
+                self.log.warning('Fail to collect log before test end.')
         self.log.info('===>Before test end info.<====')
         cells_status = self.cellular_simulator.get_all_cell_status()
         self.log.info('UXM cell status: %s', cells_status)
