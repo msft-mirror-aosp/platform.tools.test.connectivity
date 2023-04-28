@@ -321,7 +321,7 @@ class GnssFunctionTest(BaseTestClass):
         satellite_times = defaultdict(list)
         location_fix_times = defaultdict(list)
 
-        _functions_restart_gps_daemons, killed_processes = (
+        kill_functions = (
             gutils.get_gps_process_and_kill_function_by_vendor(self.ad))
         for time in range(1, test_times+1):
             self.ad.log.info("Performing test times %d", time)
@@ -338,8 +338,8 @@ class GnssFunctionTest(BaseTestClass):
                                                  ignore_hal_crash=False)
 
 
-            for _restart_gps_daemons in _functions_restart_gps_daemons:
-                kill_start_time = _restart_gps_daemons()
+            for num, (process, kill_function) in enumerate(kill_functions.items()):
+                kill_start_time = kill_function()
                 first_gpsd_update_time = (gutils.get_gpsd_update_time(
                     self.ad,
                     kill_start_time))
@@ -363,7 +363,7 @@ class GnssFunctionTest(BaseTestClass):
                                  (location_fix_time - first_gpsd_update_time))
             start_gnss_by_gtw_gpstool(self.ad, state=False)
 
-        for num, process in enumerate(killed_processes):
+        for num, process in enumerate(kill_functions):
             prop_basename = gutils.UPLOAD_TO_SPONGE_PREFIX + f"{process}_recovery_time_"
             self.ad.log.info(prop_basename + "AVG %d",
                              mean(satellite_times[process]))

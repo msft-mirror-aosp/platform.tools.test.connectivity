@@ -2375,14 +2375,12 @@ def get_gps_process_and_kill_function_by_vendor(ad):
     """
     if check_chipset_vendor_by_qualcomm(ad):
         ad.log.info("Triggered modem SSR")
-        return [functools.partial(gnss_trigger_modem_ssr_by_mds, ad=ad)], ['ssr']
+        return {"ssr": functools.partial(gnss_trigger_modem_ssr_by_mds, ad=ad)}
     else:
-        functions = []
         ad.log.info("Triggered restarting GPS daemons")
-        for service in ['gpsd', 'scd', 'lhd']:
-            functions.append(
-                functools.partial(restart_gps_daemons, ad=ad, service=service))
-        return functions, ['gpsd', 'scd', 'lhd']
+        return {"gpsd":  functools.partial(restart_gps_daemons, ad=ad, service="gpsd"),
+                "scd": functools.partial(restart_gps_daemons, ad=ad, service="scd"),
+                "lhd": functools.partial(restart_gps_daemons, ad=ad, service="lhd"),}
 
 
 def is_device_wearable(ad):
