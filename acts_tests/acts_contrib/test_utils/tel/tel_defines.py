@@ -807,6 +807,7 @@ MACEDONIA_TELEKOM = "macedonia_telekom"
 MONTENEGRO_TELEKOM = "montenegro_telekom"
 UKRAINE = "ukraine"
 NORWAY = "norway"
+BULGARIA = "bulgaria"
 # Carrier Config Update
 CARRIER_ID_VERSION = "3"
 ER_DB_ID_VERSION = "99999"
