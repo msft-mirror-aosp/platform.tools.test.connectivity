@@ -132,6 +132,14 @@ class AtUtil():
         cmd = r'am instrument -w -e request at+slotmap=1 -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
         return self.send(cmd)
 
+    def disable_dsp(self):
+        cmd = r'am instrument -w -e request at+googsetnv=\"NASU\.LCPU\.LOG\.SWITCH\",0,\"00\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        return self.send(cmd)
+
+    def get_dsp_status(self):
+        cmd = r'am instrument -w -e request at+googgetnv=\"NASU\.LCPU\.LOG\.SWITCH\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        return self.send(cmd)
+
     def enable_ims_nr(self):
         # set !NRCAPA.Gen.VoiceOverNr
         self.set_nv(
@@ -309,19 +317,17 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                 modem_logs.set_modem_log_profle(self.cellular_dut.ad, modem_logs.ModemLogProfile.LASSEN_TCP_DSP)
                 # start log
                 modem_logs.start_modem_logging(self.cellular_dut.ad)
-            super().setup_test()
             modem_log_dir = os.path.join(self.root_output_path, 'modem_log')
             os.makedirs(modem_log_dir, exist_ok=True)
             self.modem_log_path = os.path.join(modem_log_dir, self.test_name)
             os.makedirs(self.modem_log_path, exist_ok=True)
+            super().setup_test()
         except BrokenPipeError:
             self.log.info('TA crashed test need retry.')
             self.need_retry = True
             self.cellular_simulator.recovery_ta()
             self.cellular_simulator.socket_connect()
             raise signals.TestFailure('TA crashed mid test, retry needed.')
-
-    
 
     def toggle_modem_log(self, new_state: bool, timeout: int=30):
         new_state = str(new_state).lower()
@@ -589,7 +595,9 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                 modem_logs.clear_modem_logging(self.cellular_dut.ad)
         else:
             try:
-                self.collect_modem_log(self.modem_log_path)
+                if self.is_mdstest_supported:
+                    self.collect_modem_log(self.modem_log_path)
+                    self.at_util.disable_dsp()
             except RuntimeError:
                 self.log.warning('Fail to collect log before test end.')
         self.log.info('===>Before test end info.<====')
@@ -608,6 +616,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         if self.is_mdstest_supported:
             self.log.info('Band lock info: \n%s', self.at_util.get_band_lock_info())
             self.log.info('Sim slot map: \n%s', self.at_util.get_sim_slot_mapping())
+            self.log.info('DSP status: \n%s', self.at_util.get_dsp_status())
 
         # processing result
         self.sponge_upload()
