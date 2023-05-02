@@ -127,6 +127,10 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         self.log.info('UE pick up call.')
         self.dut.adb.shell('input keyevent KEYCODE_CALL')
 
+        # Set mac padding
+        if 'NR' in self.test_name:
+            self.cellular_simulator.modify_dl_ul_mac_padding()
+
         # Mute the call
         self.dut.droid.telecomCallMute()
 

@@ -102,6 +102,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     SCPI_SYSTEM_ERROR_CHECK_CMD = 'SYST:ERR?\n'
     SCPI_CHECK_CONNECTION_CMD = '*IDN?\n'
     SCPI_DEREGISTER_UE_IMS = 'SYSTem:IMS:SERVer:UE:DERegister'
+    _SCPI_CHANGE_DL_TDOMAIN = 'BSE:CONFig:NR5G:CELL1:SCHeduling:BWP0:FC0:SC0:DL:TDOMain:APOLicy ONMac'
+    _SCPI_CHANGE_UL_TDOMAIN = 'BSE:CONFig:NR5G:CELL1:SCHeduling:BWP0:FC0:SC0:UL:NUL:TDOMain:APOLicy ONSRbsr'
     # require: path to SCPI file
     SCPI_IMPORT_SCPI_FILE_CMD = 'SYSTem:SCPI:IMPort "{}"\n'
     # require: 1. cell type (E.g. NR5G), 2. cell number (E.g CELL1)
@@ -713,6 +715,12 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                                             2)
 
             raise RuntimeError(f'Fail to aggregate to NR from LTE.')
+
+    def modify_dl_ul_mac_padding(self):
+        """Disables dl/ul mac padding packets."""
+        self.log.info('modifying dl ul mac padding')
+        self._socket_send_SCPI_command(self._SCPI_CHANGE_DL_TDOMAIN)
+        self._socket_send_SCPI_command(self._SCPI_CHANGE_UL_TDOMAIN)
 
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """Configures the LTE RRC state change timer.
