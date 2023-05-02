@@ -37,7 +37,7 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
         '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201 -O{second}')
 
     START_IPERF_CLIENT_HOST_CMD_FR2 = (
-        '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201 -P32 -O{second}')
+        '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201 -O{second}')
 
     def __init__(self, controllers):
         super().__init__(controllers)
