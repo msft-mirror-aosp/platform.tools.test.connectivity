@@ -594,12 +594,11 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                 # clear log
                 modem_logs.clear_modem_logging(self.cellular_dut.ad)
         else:
-            try:
-                if self.is_mdstest_supported:
+            if self.is_mdstest_supported:
+                try:
                     self.collect_modem_log(self.modem_log_path)
-                    self.at_util.disable_dsp()
-            except RuntimeError:
-                self.log.warning('Fail to collect log before test end.')
+                except RuntimeError:
+                    self.log.warning('Fail to collect log before test end.')
         self.log.info('===>Before test end info.<====')
         cells_status = self.cellular_simulator.get_all_cell_status()
         self.log.info('UXM cell status: %s', cells_status)
@@ -614,9 +613,10 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         self.cellular_dut.toggle_airplane_mode(True)
 
         if self.is_mdstest_supported:
+            self.at_util.disable_dsp()
             self.log.info('Band lock info: \n%s', self.at_util.get_band_lock_info())
             self.log.info('Sim slot map: \n%s', self.at_util.get_sim_slot_mapping())
-            self.log.info('DSP status: \n%s', self.at_util.get_dsp_status())
+            self.log.info('DSP status: \n%s', self.at_util.get_dsp_status)
 
         # processing result
         self.sponge_upload()
