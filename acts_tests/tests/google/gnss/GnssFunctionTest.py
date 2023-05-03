@@ -271,7 +271,7 @@ class GnssFunctionTest(BaseTestClass):
             self.ttff_test_cycle,
             self.pixel_lab_location,
             raninterval=True,
-            mininterval=10,
+            mininterval=15,
             maxinterval=20,)
 
     """ Test Cases """
