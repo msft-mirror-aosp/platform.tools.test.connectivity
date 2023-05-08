@@ -104,6 +104,11 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.num_carriers = len(bands)
 
+        # Don't configure secondary cells if we're using the built-in power
+        # configuration.
+        if self._config_mode != ConfigurationMode.Power:
+            self.cmx.set_band_combination(bands)
+
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """ Configures the LTE RRC state change timer.
 
@@ -346,8 +351,25 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         the UE before starting carrier aggregation.
         """
         self.wait_until_communication_state()
-        self.bts[1].attach_as_secondary_cell()
-        time.sleep(10)
+
+        # primary cell is attached, now turn on all secondary cells
+        if self.cmx.secondary_cells:
+            self.cmx.turn_on_secondary_cells()
+
+        # if a primary lte and primary nr cell exist, then activate endc on
+        # primary nr cell
+        is_nsa = self.cmx.primary_lte_cell and self.cmx.primary_nr_cell
+
+        if is_nsa:
+            self.cmx.primary_nr_cell.activate_endc()
+
+        # attach secondary lte and nr cells
+        # if nsa then nr cells should be added to secondary cell group
+        for bts in self.cmx.secondary_lte_cells:
+            bts.attach_as_secondary_cell()
+
+        for bts in self.cmx.secondary_nr_cells:
+            bts.attach_as_secondary_cell(scg=is_nsa)
 
         if self._config_mode and self._config_mode == ConfigurationMode.Power:
             self.configure_for_power_measurement()
@@ -358,24 +380,28 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     def configure_for_power_measurement(self):
         """ Applies a pre-defined configuration for PDCCH power testing."""
         self.log.info('set lte cdrx for nr nsa scenario')
-        self.bts[0].set_cdrx_config()
+        for bts in self.cmx.lte_cells:
+            bts.set_cdrx_config()
         time.sleep(5)
 
         self.log.info('Disables mac padding')
-        self.bts[0].set_dl_mac_padding(False)
-        self.bts[1].set_dl_mac_padding(False)
+        for bts in self.bts:
+            bts.set_dl_mac_padding(False)
         time.sleep(5)
 
         self.log.info('configure flexible slots and wait for 5 seconds')
-        self.bts[1].config_flexible_slots()
+        for bts in self.cmx.nr_cells:
+            bts.config_flexible_slots()
         time.sleep(5)
 
         self.log.info('disable all ul subframes of the lte cell')
-        self.bts[0].disable_all_ul_subframes()
+        for bts in self.cmx.lte_cells:
+            bts.disable_all_ul_subframes()
         time.sleep(30)
 
         self.log.info('Disables Nr UL slots')
-        self.bts[1].disable_all_ul_slots()
+        for bts in self.cmx.nr_cells:
+            bts.disable_all_ul_slots()
         time.sleep(5)
 
     def wait_until_attached(self, timeout=120):
