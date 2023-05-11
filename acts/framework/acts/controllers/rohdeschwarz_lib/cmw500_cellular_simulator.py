@@ -46,6 +46,12 @@ MIMO_ANTENNA_COUNT = {
     LteSimulation.MimoMode.MIMO_4x4: 4,
 }
 
+IP_ADDRESS_TYPE_MAPPING = {
+    LteSimulation.IPAddressType.IPV4: cmw500.IPAddressType.IPV4,
+    LteSimulation.IPAddressType.IPV6: cmw500.IPAddressType.IPV6,
+    LteSimulation.IPAddressType.IPV4V6: cmw500.IPAddressType.IPV4V6,
+}
+
 # get mcs vs tbsi map with 256-qam disabled(downlink)
 get_mcs_tbsi_map_dl = {
     cmw500.ModulationType.QPSK: {
@@ -640,6 +646,30 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             offset: Number in range 0 to (long cycle - 1)
         """
         self.cmw.drx_long_cycle_offset = offset
+
+    def set_apn(self, apn):
+        """ Configures the callbox network Access Point Name.
+
+        Args:
+            apn: the APN name
+        """
+        self.cmw.apn = apn
+
+    def set_ip_type(self, ip_type):
+        """ Configures the callbox network IP type.
+
+        Args:
+            ip_type: the network type to use.
+        """
+        self.cmw.ip_type = IP_ADDRESS_TYPE_MAPPING[ip_type]
+
+    def set_mtu(self, mtu):
+        """ Configures the callbox network Maximum Transmission Unit.
+
+        Args:
+            mtu: the MTU size.
+        """
+        self.cmw.mtu = mtu
 
     def lte_attach_secondary_carriers(self, ue_capability_enquiry):
         """ Activates the secondary carriers for CA. Requires the DUT to be
