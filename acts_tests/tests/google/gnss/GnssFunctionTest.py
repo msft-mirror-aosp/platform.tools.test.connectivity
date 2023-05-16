@@ -65,7 +65,7 @@ from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 
 
-_PPS_KICKIN_WAITING_TIME_IN_SECOND = 10
+_PPS_KICKIN_WAITING_TIME_IN_SECOND = 30
 
 class GnssFunctionTest(BaseTestClass):
     """ GNSS Function Tests"""
@@ -885,7 +885,7 @@ class GnssFunctionTest(BaseTestClass):
         with gutils.full_gnss_measurement(self.ad):
             first_fixed_time = gnss_tracking_via_gtw_gpstool(
                 self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
-                testtime=3, meas_flag=True)
+                testtime=5, meas_flag=True)
         gutils.stop_pixel_logger(self.ad)
         start_time = first_fixed_time + datetime.timedelta(
             seconds=time.timezone + _PPS_KICKIN_WAITING_TIME_IN_SECOND)
