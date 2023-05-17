@@ -107,6 +107,7 @@ class GnssFunctionTest(BaseTestClass):
         gutils.enable_supl_mode(self.ad)
         gutils.enable_vendor_orbit_assistance_data(self.ad)
         gutils.disable_ramdump(self.ad)
+        gutils.enable_compact_and_particle_fusion_log(self.ad)
 
     def setup_test(self):
         log_current_epoch_time(self.ad, "test_start_time")
