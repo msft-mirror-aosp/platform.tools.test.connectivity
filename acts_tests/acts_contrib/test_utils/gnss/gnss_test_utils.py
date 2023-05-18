@@ -2318,26 +2318,24 @@ def get_new_pid_process_time(ad, origin_pid, process_name, timeout):
     raise ValueError("Unable to restart \"%s\"" % process_name)
 
 
-def get_gpsd_update_time(ad, begin_time):
+def get_gpsd_update_time(ad, begin_time, dwelltime=30):
     """Get the UTC time of first GPSd status update shows up after begin_time
 
     Args:
         ad: An AndroidDevice object.
         begin_time: The start time of the log.
+        dwelltime: Waiting time for gnss status update. Default is 30 seconds.
 
     Returns:
         The datetime object which indicates when is first GPSd status update
     """
     ad.log.info("Checking GNSS status after %s",
                 datetime.fromtimestamp( begin_time / 1000))
-    for retry_times in range(1, 7):
-        gnss_status = ad.search_logcat("Gnss status update",
-                                       begin_time=begin_time)
-        if len(gnss_status) > 0:
-            break
-        ad.log.info("GNSS status update not found, waiting for retry %d", retry_times)
-        time.sleep(1)
-    else:
+    time.sleep(dwelltime)
+
+    gnss_status = ad.search_logcat("Gnss status update",
+                                    begin_time=begin_time)
+    if not gnss_status:
         raise ValueError("No \"GNSS status update\" found in logs.")
     ad.log.info("GNSS status update found.")
     return int(gnss_status[0]["datetime_obj"].timestamp() * 1000)

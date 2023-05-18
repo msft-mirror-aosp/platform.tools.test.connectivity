@@ -335,7 +335,7 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.log.info("Start tracking")
             gutils.wait_n_mins_for_gnss_tracking(self.ad,
                                                  begin_time,
-                                                 testtime=0.25,
+                                                 testtime=0.5,
                                                  ignore_hal_crash=False)
 
 
@@ -347,7 +347,7 @@ class GnssFunctionTest(BaseTestClass):
                 self.ad.log.info("Resume tracking ... ")
                 gutils.wait_n_mins_for_gnss_tracking(self.ad,
                                                      begin_time,
-                                                     testtime=num+0.5,
+                                                     testtime=num+1,
                                                      ignore_hal_crash=True)
 
                 location_fix_time = (gutils.
