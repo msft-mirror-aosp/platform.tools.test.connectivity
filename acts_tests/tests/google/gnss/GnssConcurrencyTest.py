@@ -251,6 +251,7 @@ class GnssConcurrencyTest(BaseTestClass):
                     request_type, len(outliers[request_type]))
 
         if failure_log:
+            failure_log += f"The test begins at {begin_time}\n"
             raise signals.TestFailure(failure_log)
 
     def run_engine_switching_test(self, freq):
