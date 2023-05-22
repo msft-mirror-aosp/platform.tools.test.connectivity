@@ -317,6 +317,8 @@ class GnssFunctionTest(BaseTestClass):
             1. The time GPSd services take to restart must be within 3 seconds.
             2. Location fix time must be within supl_hs_criteria
         """
+        if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Skip the test due to Qualcomm chipset")
         test_times = 5
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         satellite_times = defaultdict(list)
