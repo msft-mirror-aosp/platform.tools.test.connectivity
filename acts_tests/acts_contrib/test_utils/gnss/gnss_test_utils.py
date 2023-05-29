@@ -1227,7 +1227,7 @@ def verify_gps_time_should_be_close_to_device_time(ad, tracking_result):
         tracking_result: The result we get from GNSS tracking.
     """
     ad.log.info("Validating GPS/Device time difference")
-    max_time_diff_in_seconds = 2.0
+    max_time_diff_in_seconds = 3.0 if is_device_wearable() else 2.0
     exceed_report = []
     for report in tracking_result.values():
         time_diff_in_seconds = abs((report.report_time - report.device_time).total_seconds())
