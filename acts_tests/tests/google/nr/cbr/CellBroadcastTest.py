@@ -67,6 +67,7 @@ from acts_contrib.test_utils.tel.tel_defines import MEXICO
 from acts_contrib.test_utils.tel.tel_defines import BAHAMAS
 from acts_contrib.test_utils.tel.tel_defines import UKRAINE
 from acts_contrib.test_utils.tel.tel_defines import NORWAY
+from acts_contrib.test_utils.tel.tel_defines import BULGARIA
 from acts_contrib.test_utils.tel.tel_defines import GERMANY_TELEKOM
 from acts_contrib.test_utils.tel.tel_defines import QATAR_VODAFONE
 from acts_contrib.test_utils.tel.tel_defines import CBR_APEX_PACKAGE
@@ -161,6 +162,8 @@ VIBRATION_START_TIME = "startTime"
 VIBRATION_END_TIME = "endTime"
 INVALID_VIBRATION_TIME = "0"
 INVALID_SUBSCRIPTION_ID = -1
+WEA_ROAMING_MSG = "While you're roaming, you may get some alerts" \
+                  " that aren't included in these settings"
 
 class CellBroadcastTest(TelephonyBaseTest):
     def setup_class(self):
@@ -570,7 +573,9 @@ class CellBroadcastTest(TelephonyBaseTest):
         return alert_in_notification
 
 
-    def _verify_send_receive_wea_alerts(self, ad, region=None, call=False, call_direction=DIRECTION_MOBILE_ORIGINATED, test_channel=None, screen_off=False):
+    def _verify_send_receive_wea_alerts(self, ad, region=None, call=False,
+                                        call_direction=DIRECTION_MOBILE_ORIGINATED,
+                                        test_channel=None, screen_off=False):
         result = True
         # Always clear notifications in the status bar before testing to find alert notification easily.
         self._clear_statusbar_notifications(ad)
@@ -677,11 +682,49 @@ class CellBroadcastTest(TelephonyBaseTest):
         return result
 
 
-    def _settings_test_flow(self, region):
+    def _set_device_to_roaming_region(self, ad, roaming_region):
+        """Sets device to the roaming region."""
+
+        mccmnc = self.region_plmn_dict[roaming_region][MCC_MNC]
+        set_roaming_region = f'am broadcast -a com.android.internal.telephony.TestServiceState' \
+                                f' --ei voice_roaming_type 1 --es operator test,test,{mccmnc}'
+        ad.log.info("Set roaming region to %s", roaming_region)
+        ad.log.info(set_roaming_region.format(mccmnc))
+        ad.adb.shell(set_roaming_region.format(mccmnc))
+
+    def _verify_device_in_roaming_region(self, ad, roaming_region):
+        """Verifies a roaming message appearing in WEA setting UI."""
+
+        result = True
+        self._open_wea_settings_page(ad)
+        ad.log.info("Verify if WEA Setting UI has a roaming message: '%s' ", WEA_ROAMING_MSG)
+        if not self._verify_text_present_on_ui(ad, alert_text=WEA_ROAMING_MSG):
+            ad.log.error("Not found a roaming message in WEA Setting UI!")
+            result = False
+        else:
+            ad.log.info("Found a roaming message in WEA Setting UI")
+        time.sleep(WAIT_TIME_FOR_UI)
+        log_screen_shot(ad, "default_settings_%s" % roaming_region)
+        self._close_wea_settings_page(ad)
+        return result
+
+
+
+    def _settings_test_flow(self, region, roaming=False, roaming_region=None):
         ad = self.android_devices[0]
         result = True
         self._set_device_to_specific_region(ad, region)
         time.sleep(WAIT_TIME_FOR_UI)
+
+        # If roaming is enabled, set device to the roaming region.
+        if roaming:
+            if roaming_region:
+                self._set_device_to_roaming_region(ad, roaming_region)
+                time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+            else:
+                ad.log.error("Roaming region is %s, please set a valid region!", roaming_region)
+                result = False
+
         if not self._verify_wea_default_settings(ad, region):
             result = False
         log_screen_shot(ad, "default_settings_%s" % region)
@@ -690,6 +733,11 @@ class CellBroadcastTest(TelephonyBaseTest):
         # failing to open the wea setting UI. So we just delay 1 sec after closing
         # the wea setting UI.
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        # if roaming is enabled, Verify the device is in roaming region.
+        if roaming and not self._verify_device_in_roaming_region(ad, roaming_region):
+            result = False
+
         if not self._verify_wea_toggle_settings(ad, region):
             log_screen_shot(ad, "toggle_settings_%s" % region)
             result = False
@@ -749,7 +797,8 @@ class CellBroadcastTest(TelephonyBaseTest):
         return result
 
 
-    def _send_receive_test_flow(self, region, test_channel=None):
+    def _send_receive_test_flow(self, region, test_channel=None,
+                                roaming=False, roaming_region=None):
         """Verifies wea alert channels.
 
         Args:
@@ -759,11 +808,29 @@ class CellBroadcastTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         result = True
         self._set_device_to_specific_region(ad, region)
+
+        # If roaming is enabled, set device to the roaming region.
+        if roaming:
+            if roaming_region:
+                self._set_device_to_roaming_region(ad, roaming_region)
+            else:
+                ad.log.error("Roaming region is %s, please set a valid region!", roaming_region)
+                result = False
+
         time.sleep(WAIT_TIME_FOR_UI)
         ad.log.info("disable DND: %s", CMD_DND_OFF)
         ad.adb.shell(CMD_DND_OFF)
-        if not self._verify_send_receive_wea_alerts(ad, region, test_channel=test_channel):
-            result = False
+
+        # if roaming is enabled, verify alert channels of the roaming region.
+        if roaming:
+            ad.log.info("Verifies alert channels of the roaming region, %s!", roaming_region)
+            if not self._verify_send_receive_wea_alerts(ad, roaming_region,
+                                                        test_channel=test_channel):
+                result = False
+        else:
+            # Verify alert channels of the home region.
+            if not self._verify_send_receive_wea_alerts(ad, region, test_channel=test_channel):
+                result = False
         get_screen_shot_log(ad)
         return result
 
@@ -2019,6 +2086,19 @@ class CellBroadcastTest(TelephonyBaseTest):
         """
         return self._settings_test_flow(NORWAY)
 
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_bulgaria(self):
+        """ Verifies Wireless Emergency Alert settings for Bulgaria
+
+        configures the device to Bulgaria
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(BULGARIA)
+
     @test_tracker_info(uuid="f3a99475-a23f-427c-a371-d2a46d357d75")
     @TelephonyBaseTest.tel_test_wrap
     def test_send_receive_alerts_australia(self):
@@ -3192,6 +3272,22 @@ class CellBroadcastTest(TelephonyBaseTest):
             True if pass; False if fail and collects screenshot
         """
         return self._send_receive_test_flow(NORWAY)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_bulgaria(self):
+        """ Verifies Wireless Emergency Alerts for Bulgaria.
+
+        configures the device to Bulgaria
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(BULGARIA)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4898,4 +4994,167 @@ class CellBroadcastTest(TelephonyBaseTest):
                                                     upgrade_cbr_train_build=True,
                                                     rollback_cbr_train_build=True)
 
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_italy_roaming_france(self):
+        """Verifies WEA settings for Italy when roaming in France
 
+        configures the device to Italy
+        Set the roaming region to France
+        verifies alert names and its default values for Italy
+        verifies if a roaming message is on alert setting UI
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._settings_test_flow(ITALY, roaming=True, roaming_region=FRANCE)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_france_roaming_genmany_telekom(self):
+        """Verifies WEA settings for France when roaming in Germany Telekom
+
+        configures the device to France
+        Set the roaming region to Germany Telekom
+        verifies alert names and its default values for France
+        verifies if a roaming message is on alert setting UI
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._settings_test_flow(FRANCE, roaming=True, roaming_region=GERMANY_TELEKOM)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_norway_roaming_qatar_vodafone(self):
+        """Verifies WEA settings for Norway when roaming in Qatar Vodafone
+
+        configures the device to Norway
+        Set the roaming region to Qatar
+        verifies alert names and its default values for Norway
+        verifies if a roaming message is on alert setting UI
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._settings_test_flow(NORWAY, roaming=True, roaming_region=QATAR_VODAFONE)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_germany_telekom_roaming_norway(self):
+        """Verifies WEA settings for Germany when roaming in Norway
+
+        configures the device to Germany
+        Set the roaming region to Norway
+        verifies alert names and its default values for Germany
+        verifies if a roaming message is on alert setting UI
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._settings_test_flow(GERMANY_TELEKOM, roaming=True, roaming_region=NORWAY)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_qatar_vodafone_roaming_italy(self):
+        """Verifies WEA settings for Qatar when roaming in Italy
+
+        configures the device to Qatar
+        Set the roaming region to Italy
+        verifies alert names and its default values for Qatar
+        verifies if a roaming message is on alert setting UI
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._settings_test_flow(QATAR_VODAFONE, roaming=True, roaming_region=ITALY)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_italy_roaming_france(self):
+        """ Verifies Wireless Emergency Alerts for Italy when roaming in France.
+
+        configures the device to Italy
+        Set the roaming region to France
+        send alerts across all channels for France,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._send_receive_test_flow(ITALY, roaming=True, roaming_region=FRANCE)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_france_roaming_germany_telekom(self):
+        """ Verifies Wireless Emergency Alerts for France when roaming in Germany.
+
+        configures the device to France
+        Set the roaming region to Germany
+        send alerts across all channels for Germany
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._send_receive_test_flow(FRANCE, roaming=True, roaming_region=GERMANY_TELEKOM)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_norway_roaming_qatar_vodafone(self):
+        """ Verifies Wireless Emergency Alerts for Norway when roaming in Qatar.
+
+        configures the device to Norway
+        Set the roaming region to Qatar vodafone
+        send alerts across all channels for Qatar vodafone
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._send_receive_test_flow(NORWAY, roaming=True, roaming_region=QATAR_VODAFONE)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_germany_telekom_roaming_norway(self):
+        """ Verifies Wireless Emergency Alerts for Germany when roaming in Norway.
+
+        configures the device to Germany
+        Set the roaming region to Norway
+        send alerts across all channels for Norway,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._send_receive_test_flow(GERMANY_TELEKOM, roaming=True, roaming_region=NORWAY)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_qatar_vodafone_roaming_italy(self):
+        """ Verifies Wireless Emergency Alerts for Qatar when roaming in Italy.
+
+        configures the device to Qatar vodafone
+        Set the roaming region to Italy
+        send alerts across all channels for Italy,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+
+        return self._send_receive_test_flow(QATAR_VODAFONE, roaming=True, roaming_region=ITALY)

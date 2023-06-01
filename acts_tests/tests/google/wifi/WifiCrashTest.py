@@ -34,8 +34,8 @@ SUPPLICANT_KILL_SHELL_COMMAND = "killall wpa_supplicant"
 WIFI_VENDOR_EXT_HAL_DAEMON = "vendor.google.wifi_ext@1.0-service-vendor"
 WIFI_VENDOR_EXT_HAL_DAEMON_PREFIX = "vendor.google.wifi_ext@"
 WIFI_VENDOR_EXT_HAL_DAEMON_KILL_SHELL_COMMAND = "killall vendor.google.wifi_ext@1.0-service-vendor"
-WIFI_VENDOR_HAL_DAEMON = "android.hardware.wifi@1.0-service"
-WIFI_VENDOR_HAL_DAEMON_KILL_SHELL_COMMAND = "killall android.hardware.wifi@1.0-service"
+WIFI_VENDOR_HAL_DAEMON = "vendor.google.wifi_ext-service-vendor"
+WIFI_VENDOR_HAL_DAEMON_KILL_SHELL_COMMAND = "killall vendor.google.wifi_ext-service-vendor"
 
 
 class WifiCrashTest(WifiBaseTest):
