@@ -3,11 +3,13 @@
 import random
 import re
 import time
+import logging
 
 from acts import logger
 from acts import signals
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.openwrt_lib import network_settings
+from acts.controllers.openwrt_lib import openwrt_authentication
 from acts.controllers.openwrt_lib import wireless_config
 from acts.controllers.openwrt_lib import wireless_settings_applier
 from acts.controllers.openwrt_lib.openwrt_constants import OpenWrtModelMap as modelmap
@@ -110,14 +112,26 @@ class OpenWrtAP(object):
 
   def __init__(self, config):
     """Initialize AP."""
-    self.ssh_settings = settings.from_config(config["ssh_config"])
-    self.ssh = connection.SshConnection(self.ssh_settings)
+    try:
+      self.ssh_settings = settings.from_config(config["ssh_config"])
+      self.ssh = connection.SshConnection(self.ssh_settings)
+      self.ssh.setup_master_ssh()
+    except connection.Error:
+      logging.info("OpenWrt AP instance is not initialized, use SSH Auth...")
+      openwrt_auth = openwrt_authentication.OpenWrtAuth(
+        self.ssh_settings.hostname)
+      openwrt_auth.generate_rsa_key()
+      openwrt_auth.send_public_key_to_remote_host()
+      self.ssh_settings.identity_file = openwrt_auth.private_key_file
+      self.ssh = connection.SshConnection(self.ssh_settings)
+      self.ssh.setup_master_ssh()
     self.log = logger.create_logger(
-        lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
+      lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
     self.wireless_setting = None
     self.network_setting = network_settings.NetworkSettings(
         self.ssh, self.ssh_settings, self.log)
     self.model = self.get_model_name()
+    self.log.info("OpenWrt AP: %s has been initiated." % self.model)
     if self.model in modelmap.__dict__:
       self.radios = modelmap.__dict__[self.model]
     else:
@@ -637,8 +651,10 @@ class OpenWrtAP(object):
 
   def close(self):
     """Reset wireless and network settings to default and stop AP."""
-    if self.network_setting.config:
+    try:
       self.network_setting.cleanup_network_settings()
+    except AttributeError as e:
+      self.log.warning("OpenWrtAP object has no attribute 'network_setting'")
     if self.wireless_setting:
       self.wireless_setting.cleanup_wireless_settings()
 
@@ -649,4 +665,3 @@ class OpenWrtAP(object):
   def reboot(self):
     """Reboot Openwrt."""
     self.ssh.run("reboot")
-
