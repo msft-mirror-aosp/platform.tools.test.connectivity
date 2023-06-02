@@ -26,7 +26,6 @@ install_requires = [
     # Require an older version of setuptools that does not enforce PEP 440.
     # This must be added first.
     'setuptools<66.0.0',
-    'backoff',
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
     'mobly==1.12.0',
@@ -46,6 +45,7 @@ install_requires = [
 ]
 
 versioned_deps = {
+    'backoff': 'backoff',
     'numpy': 'numpy',
     'scipy': 'scipy',
     'protobuf': 'protobuf==4.21.5',
@@ -60,6 +60,7 @@ if sys.version_info < (3, 8):
     versioned_deps['numpy'] = 'numpy<1.22'
     versioned_deps['scipy'] = 'scipy<1.8'
 if sys.version_info < (3, 7):
+    versioned_deps['backoff'] = 'backoff<2.0'
     versioned_deps['numpy'] = 'numpy<1.20'
     versioned_deps['scipy'] = 'scipy<1.6'
     versioned_deps['protobuf'] = 'protobuf==3.20.1'
