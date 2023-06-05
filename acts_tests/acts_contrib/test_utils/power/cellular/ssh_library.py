@@ -2,7 +2,6 @@
 import logging
 import re
 import paramiko  # type: ignore
-from paramiko.client import SSHClient
 
 _LOG = logging.getLogger(__name__)
 
@@ -13,22 +12,26 @@ class SshLibrary:
   _PSEXEC_PROC_STARTED_REGEX_FORMAT = 'started on * with process ID {proc_id}'
 
   _SSH_START_APP_CMD_FORMAT = 'psexec -s -d -i 1 "{exe_path}"'
-  _SSH_CHECK_APP_RUNNING_CMD_FORMAT = 'tasklist | findstr /R {regex_app_name}'
+  _SSH_CHECK_APP_RUNNING_CMD_FORMAT = (
+      'tasklist /fi "ImageName eq {regex_app_name}"'
+  )
   _SSH_KILL_PROCESS_BY_NAME = 'taskkill /IM {process_name} /F'
 
   def __init__(self, hostname: str, username: str):
     self.log = _LOG
     self.ssh = self.create_ssh_socket(hostname, username)
 
-  def create_ssh_socket(self, hostname: str, username: str) -> SSHClient:
+  def create_ssh_socket(
+      self, hostname: str, username: str
+  ) -> paramiko.SSHClient:
     """Creates ssh session to host.
 
     Args:
-      hostname: ip address of the host machine
-      username: username of the host ims account
+      hostname: IP address of the host machine.
+      username: Username of the host ims account.
 
     Returns:
-      An SSHClient object connected the hostname
+      An SSHClient object connected the hostname.
     """
 
     self.log.info('Creating ssh session to hostname:%s ', hostname)
@@ -43,11 +46,11 @@ class SshLibrary:
     """Runs a command using Paramiko and return stdout code.
 
     Args:
-      command: command to run on the connected host
+      command: Command to run on the connected host.
 
     Returns:
       A tuple containing the command result output, error information, and exit
-      status
+      status.
     """
 
     self.log.info('Running command: command:%s', command)
@@ -74,10 +77,10 @@ class SshLibrary:
     """Closes any app whose name passed as an argument.
 
     Args:
-      app: application name
+      app: Application name.
 
     Returns:
-      Resulting output of closing the application
+      Resulting output of closing the application.
     """
 
     command = self._SSH_KILL_PROCESS_BY_NAME.format(process_name=app)
@@ -88,15 +91,15 @@ class SshLibrary:
     """Starts any app whose name passed as an argument.
 
     Args:
-      app: application name
-      location: directory location of the application
+      app: Application name.
+      location: Directory location of the application.
+
+    Returns:
+      Resulting output of starting the application.
 
     Raises:
       RuntimeError:
-        application failed to start
-
-    Returns:
-      Resulting output of starting the application
+        Application failed to start.
     """
 
     command = self._SSH_START_APP_CMD_FORMAT.format(exe_path=location + app)
@@ -115,19 +118,14 @@ class SshLibrary:
     """Checks if the given app is running.
 
     Args:
-      app: application name
+      app: Application name.
 
     Returns:
-      A boolean representing if the application is running or not
+      A boolean representing if the application is running or not.
     """
     is_running_cmd1 = self._SSH_CHECK_APP_RUNNING_CMD_FORMAT.format(
         regex_app_name=app
     )
-    is_running_cmd2 = self._SSH_CHECK_APP_RUNNING_CMD_FORMAT.format(
-        regex_app_name=app[0:-1]
-    )
 
-    # Sometimes app is run as .ex instead of .exe
-    result1, _, _ = self.run_command_paramiko(is_running_cmd1)
-    result2, _, _ = self.run_command_paramiko(is_running_cmd2)
-    return bool(result1 or result2)
+    result, _, _ = self.run_command_paramiko(is_running_cmd1)
+    return 'PID' in result

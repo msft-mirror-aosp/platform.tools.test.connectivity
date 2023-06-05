@@ -57,7 +57,10 @@ class ImsApiConnector:
   _IMS_SERVER_APP_LOC = (
       r'C:\Program Files (x86)\Keysight\C8700201A\IMS-SIP Server\\'
   )
-
+  _IMS_API_APP = "Keysight.ImsSip.ApiConnector.exe"
+  _IMS_API_APP_LOC = (
+      r"C:\Program Files (x86)\Keysight\C8700201A\IMS-SIP API Connector\\"
+  )
   _IMS_APP_DEFAULT_PORT_MAPPING = {
       ImsAppName.CLIENT: 8250,
       ImsAppName.SERVER: 8240,
@@ -96,7 +99,7 @@ class ImsApiConnector:
     )
 
     # start server and client if they are not started
-    self._start_client_server_if_down()
+    self._start_apps_if_down()
     # create IMS-Client API link
     is_app_linked = self.create_ims_app_link()
 
@@ -285,9 +288,15 @@ class ImsApiConnector:
     time.sleep(self._APP_BOOT_TIME)
     self.create_ims_app_link()
 
-  def _start_client_server_if_down(self):
-    """Starts the client and server app if they are down."""
+  def _start_apps_if_down(self):
+    """Starts the client, server, api connector app if they are down."""
     started = False
+
+    if not self.ssh.check_app_running(self._IMS_API_APP):
+      self.log.info('api connector was not running, starting now')
+      self.ssh.start_app(self._IMS_API_APP, self._IMS_API_APP_LOC)
+      started = True
+
     if not self.ssh.check_app_running(self._IMS_CLIENT_APP):
       self.log.info('client was not running, starting now')
       self.ssh.start_app(self._IMS_CLIENT_APP, self._IMS_CLIENT_APP_LOC)
@@ -315,9 +324,8 @@ class ImsApiConnector:
     """
     sleep_time = 5
 
-    # Check if client and server are running, if not, start them
-    self.log.info('checking if server/client are registered and running')
-    self._start_client_server_if_down()
+    self.log.info('checking if server/client/api connector are registered and running')
+    self._start_apps_if_down()
 
     # Check if client is registered to server
     if not self._is_ims_client_app_registered():
