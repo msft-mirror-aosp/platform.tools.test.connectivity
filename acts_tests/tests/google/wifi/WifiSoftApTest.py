@@ -190,8 +190,6 @@ class WifiSoftApTest(WifiBaseTest):
         initial_cell_state = tel_utils.is_sim_ready(self.log, self.dut)
         self.dut.log.info("current state: %s", initial_wifi_state)
         self.dut.log.info("is sim ready? %s", initial_cell_state)
-        if initial_cell_state:
-            self.check_cell_data_and_enable()
         config = self.create_softap_config()
         wutils.start_wifi_tethering(self.dut,
                                     config[wutils.WifiEnums.SSID_KEY],
