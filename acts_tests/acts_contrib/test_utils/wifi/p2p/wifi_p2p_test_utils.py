@@ -339,7 +339,6 @@ def find_p2p_group_owner(ad1, ad2):
     while not p2p_find_result:
         ad2.droid.wifiP2pStopPeerDiscovery()
         ad1.droid.wifiP2pStopPeerDiscovery()
-        ad2.droid.wifiP2pDiscoverPeers()
         ad1.droid.wifiP2pDiscoverPeers()
         ad1_event = ad1.ed.pop_event(p2pconsts.PEER_AVAILABLE_EVENT,
                                      p2pconsts.P2P_FIND_TIMEOUT)
