@@ -298,8 +298,18 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             telutils.toggle_airplane_mode(self.log, ad, True)
             time.sleep(2)
 
+        # clear modem logs
+        modem_logs.clear_modem_logging(self.cellular_dut.ad)
+
     def collect_power_data_and_validate(self):
+        time.sleep(120)
+        cells_status_before = sorted(self.cellular_simulator.get_all_cell_status())
+        self.log.info('UXM cell status before collect power: %s', cells_status_before)
+
         super().collect_power_data()
+        cells_status_after = sorted(self.cellular_simulator.get_all_cell_status())
+        self.log.info('UXM cell status after collect power: %s', cells_status_after)
+
         # power measurement results
         odpm_power_results = self.get_odpm_values()
         self.odpm_power = odpm_power_results.get(
@@ -307,6 +317,10 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         if hasattr(self, 'bitses'):
             self.parse_power_rails_csv()
 
+        asserts.assert_true(cells_status_before == cells_status_after,
+            'Cell status before {} and after {} the test run are not the same.'.format(
+                cells_status_before, cells_status_after
+            ))
         self.threshold_check()
 
     def setup_test(self):
