@@ -173,43 +173,93 @@ class Cmx500(abstract_inst.SocketInstrument):
         self.bts = []
 
         # Stops all active cells if there is any
-        self.disconnect()
+        self.clear_network()
 
-        self.dut = self._network.get_dut()
-        self.lte_cell = self._network.create_lte_cell('ltecell0')
-        self.nr_cell = self._network.create_nr_cell('nrcell0')
-        self._config_antenna_ports()
+        # initialize one lte and nr cell
+        self._add_lte_cell()
+        self._add_nr_cell()
 
         self.lte_rrc_state_change_timer = DEFAULT_LTE_STATE_CHANGE_TIMER
         self.rrc_state_change_time_enable = False
         self.cell_switch_on_timer = DEFAULT_CELL_SWITCH_ON_TIMER
 
-    # _config_antenna_ports for the special RF connection with cmw500 + cmx500.
-    def _config_antenna_ports(self):
-        from rs_mrt.testenvironment.signaling.sri.rat.common import CsiRsAntennaPorts
-        from rs_mrt.testenvironment.signaling.sri.rat.lte import CrsAntennaPorts
+    def set_band_combination(self, bands):
+        """ Prepares the test equipment for the indicated band/mimo combination.
 
-        max_csi_rs_ports = CsiRsAntennaPorts.NUMBER_CSI_RS_ANTENNA_PORTS_FOUR
-        max_crs_ports = CrsAntennaPorts.NUMBER_CRS_ANTENNA_PORTS_FOUR
+        Args:
+            bands: a list of bands represented as ints or strings
+            mimo_modes: a list of LteSimulation.MimoMode to use for each carrier
+        """
+        self.clear_network()
 
-        lte_cell_max_config = self.lte_cell.stub.GetMaximumConfiguration()
-        lte_cell_max_config.csi_rs_antenna_ports = max_csi_rs_ports
-        lte_cell_max_config.crs_antenna_ports = max_crs_ports
-        self.lte_cell.stub.SetMaximumConfiguration(lte_cell_max_config)
+        n_lte_cells = 1
+        n_nr_cells = 1
+        for band in bands:
+            if isinstance(band, str) and band[0] == 'n':
+                nr_bts = self._add_nr_cell()
+                nr_bts.set_band(int(band[1:]))
+                # set secondary cells to dl only to avoid running out of
+                # resources in high CA scenarios
+                if n_nr_cells > 1:
+                    nr_bts.set_dl_only(True)
+                n_nr_cells += 1
+            else:
+                lte_bts = self._add_lte_cell()
+                lte_bts.set_band(int(band))
+                if n_lte_cells > 1:
+                    lte_bts.set_dl_only(True)
+                n_lte_cells += 1
 
-        nr_cell_max_config = self.nr_cell.stub.GetMaximumConfiguration()
-        nr_cell_max_config.csi_rs_antenna_ports = max_csi_rs_ports
-        self.nr_cell.stub.SetMaximumConfiguration(nr_cell_max_config)
+        # turn on primary lte and/or nr cells
+        self._network.apply_changes()
+        if self.primary_lte_cell:
+            self._switch_on_bts(True, self.primary_lte_cell)
+        if self.primary_nr_cell:
+            self._switch_on_bts(True, self.primary_nr_cell)
+
+    def _add_nr_cell(self):
+        """Creates a new NR cell and configures antenna ports."""
+        from mrtype.counters import N310
+        nr_cell = self._network.create_nr_cell()
+        nr_cell_max_config = nr_cell.stub.GetMaximumConfiguration()
+        nr_cell_max_config.csi_rs_antenna_ports = self.MAX_CSI_RS_PORTS
+        nr_cell.stub.SetMaximumConfiguration(nr_cell_max_config)
+        # Sets n310 timer to N310.N20 to make endc more stable
+        nr_cell.set_n310(N310.N20)
+
+        nr_bts = self.create_base_station(nr_cell)
+        self.bts.append(nr_bts)
+        return nr_bts
+
+    def _add_lte_cell(self):
+        """Creates a new LTE cell and configures antenna ports."""
+        lte_cell = self._network.create_lte_cell()
+        lte_cell_max_config = lte_cell.stub.GetMaximumConfiguration()
+        lte_cell_max_config.csi_rs_antenna_ports = self.MAX_CSI_RS_PORTS
+        lte_cell_max_config.crs_antenna_ports = self.MAX_CRS_PORTS
+        lte_cell.stub.SetMaximumConfiguration(lte_cell_max_config)
+        lte_bts = self.create_base_station(lte_cell)
+
+        self.bts.append(lte_bts)
+        return lte_bts
 
     def _initial_xlapi(self):
         import xlapi
         import mrtype
         from xlapi import network
         from xlapi import settings
+        from rs_mrt.testenvironment.signaling.sri.rat.common import (
+            CsiRsAntennaPorts)
+        from rs_mrt.testenvironment.signaling.sri.rat.lte import CrsAntennaPorts
 
         self._xlapi = xlapi
         self._network = network
         self._settings = settings
+
+        # initialize defaults
+        self.MAX_CSI_RS_PORTS = (
+            CsiRsAntennaPorts.NUMBER_CSI_RS_ANTENNA_PORTS_FOUR)
+        self.MAX_CRS_PORTS = CrsAntennaPorts.NUMBER_CRS_ANTENNA_PORTS_FOUR
 
     def configure_mimo_settings(self, mimo, bts_index=0):
         """Sets the mimo scenario for the test.
@@ -254,11 +304,17 @@ class Cmx500(abstract_inst.SocketInstrument):
         """Disable packet switching in call box."""
         raise NotImplementedError()
 
-    def disconnect(self):
-        """Disconnect controller from device and switch to local mode."""
-
+    def clear_network(self):
+        """Wipes the network configuration."""
         self.bts.clear()
         self._network.reset()
+        # dut stub becomes stale after resetting
+        self.dut = self._network.get_dut()
+
+    def disconnect(self):
+        """Disconnect controller from device and switch to local mode."""
+        self.clear_network()
+        self._close_socket()
 
     def enable_packet_switching(self):
         """Enable packet switching in call box."""
@@ -333,65 +389,90 @@ class Cmx500(abstract_inst.SocketInstrument):
         if not isinstance(state, LteState):
             raise ValueError('state should be the instance of LteState.')
 
-        if self.bts:
-            self.disconnect()
-        self.bts.append(LteBaseStation(self, self.lte_cell))
-        # Switch on the primary Lte cell for on state and switch all lte cells
-        # if the state is off state
-        if state.value == 'ON':
-            self.bts[0].start()
-            cell_status = self.bts[0].wait_cell_on(self.cell_switch_on_timer)
-            if cell_status:
-                logger.info('The LTE pcell status is on')
-            else:
-                raise CmxError('The LTE pcell cannot be switched on')
+        if self.primary_lte_cell:
+            self._switch_on_bts(state.value == 'ON', self.primary_lte_cell)
         else:
-            for bts in self.bts:
-                if isinstance(bts, LteBaseStation):
-                    bts.stop()
-                logger.info('The LTE cell status is {} after stop'.format(
-                    bts.is_on()))
+            raise CmxError(
+                'Unable to set LTE signalling to {},'.format(state.value) +
+                ' no LTE cell found.')
 
     def switch_on_nsa_signalling(self):
-
-        from mrtype.counters import N310
-
-        if self.bts:
-            self.disconnect()
         logger.info('Switches on NSA signalling')
 
-        # Sets n310 timer to N310.N20 to make endc more stable
-        logger.info('set nr cell n310 timer to N310.N20')
-        self.nr_cell.set_n310(N310.N20)
-        self.bts.append(LteBaseStation(self, self.lte_cell))
-        self.bts.append(NrBaseStation(self, self.nr_cell))
-
-        self.bts[0].start()
-        lte_cell_status = self.bts[0].wait_cell_on(self.cell_switch_on_timer)
-        if lte_cell_status:
-            logger.info('The LTE pcell status is on')
+        if self.primary_lte_cell:
+            self._switch_on_bts(True, self.primary_lte_cell)
         else:
-            raise CmxError('The LTE pcell cannot be switched on')
+            raise CmxError(
+                'Unable to turn on NSA signalling, no LTE cell found.')
 
-        self.bts[1].start()
-        nr_cell_status = self.bts[1].wait_cell_on(self.cell_switch_on_timer)
-        if nr_cell_status:
-            logger.info('The NR cell status is on')
+        if self.primary_nr_cell:
+            self._switch_on_bts(True, self.primary_nr_cell)
         else:
-            raise CmxError('The NR cell cannot be switched on')
+            raise CmxError(
+                'Unable to turn on NSA signalling, no NR cell found.')
+
         time.sleep(5)
 
-    def update_lte_cell_config(self, config):
-        """Updates lte cell settings with config."""
-        set_counts = 0
-        for property in LTE_CELL_PROPERTIES:
-            if property in config:
-                setter_name = 'set_' + property
-                setter = getattr(self.lte_cell, setter_name)
-                setter(config[property])
-                set_counts += 1
-        if set_counts < len(config):
-            logger.warning('Not all configs were set in update_cell_config')
+    @property
+    def primary_cell(self):
+        # return first cell as primary, later will need to differentiate between
+        # neighbor and active cells for handover scenarios.
+        return self.bts[0] if self.bts else None
+
+    @property
+    def primary_lte_cell(self):
+        """Gets the primary LTE cell in the current scenario."""
+        return self.lte_cells[0] if self.lte_cells else None
+
+    @property
+    def primary_nr_cell(self):
+        """Gets the primary NR cell in the current scenario."""
+        return self.nr_cells[0] if self.nr_cells else None
+
+    @property
+    def lte_cells(self):
+        """Gets all lte cells in the current scenario."""
+        return list(
+            [bts for bts in self.bts if isinstance(bts, LteBaseStation)])
+
+    @property
+    def nr_cells(self):
+        """Gets all nr cells in the current scenario."""
+        return list(
+            [bts for bts in self.bts if isinstance(bts, NrBaseStation)])
+
+    @property
+    def secondary_lte_cells(self):
+        """Gets all secondary lte cells in the current scenario."""
+        return self.lte_cells[1:] if self.lte_cells else []
+
+    @property
+    def secondary_nr_cells(self):
+        """Gets all secondary nr cells in the current scenario."""
+        return self.nr_cells[1:] if self.nr_cells else []
+
+    @property
+    def secondary_cells(self):
+        """Gets all secondary cells in the current scenario."""
+        return self.secondary_lte_cells + self.secondary_nr_cells
+
+    def _switch_on_bts(self, enabled, bts):
+        """Switch bts signalling on/off."""
+        if enabled and not bts.is_on():
+            bts.start()
+            state = bts.wait_cell_enabled(self.cell_switch_on_timer, True)
+            if state:
+                logger.info('The cell status is on')
+            else:
+                raise CmxError('The cell cannot be switched on')
+
+        elif not enabled and bts.is_on():
+            bts.stop()
+            state = bts.wait_cell_enabled(self.cell_switch_on_timer, False)
+            if not state:
+                logger.info('The cell status is off')
+            else:
+                raise CmxError('The cell cannot be switched off')
 
     @property
     def use_carrier_specific(self):
@@ -406,6 +487,22 @@ class Cmx500(abstract_inst.SocketInstrument):
             state: ON/OFF UCS configuration.
         """
         raise NotImplementedError()
+
+    def set_keep_rrc(self, keep_connected):
+        """Sets if the CMX should maintain RRC connection after registration.
+
+        Args:
+            keep_connected: true if cmx should stay in RRC_CONNECTED state or
+                false if UE preference should be used.
+        """
+        state = 'ON' if keep_connected else 'OFF'
+        self._send('CONFigure:SIGNaling:EPS:NBEHavior:KRRC {}'.format(state))
+        self._send('CONFigure:SIGNaling:FGS:NBEHavior:KRRC {}'.format(state))
+
+    def turn_on_secondary_cells(self):
+        """Turns on all secondary cells."""
+        for bts in self.secondary_cells:
+            self._switch_on_bts(True, bts)
 
     def wait_for_rrc_state(self, state, timeout=120):
         """ Waits until a certain RRC state is set.
@@ -437,11 +534,10 @@ class Cmx500(abstract_inst.SocketInstrument):
         Raises:
             CmxError on time out.
         """
-        try:
-            self.dut.signaling.wait_for_lte_attach(self.lte_cell, timeout)
-        except:
-            raise CmxError(
-                'wait_until_attached timeout after {}'.format(timeout))
+        if not self.bts:
+            raise CmxError('cannot attach device, no cells found')
+
+        self.primary_cell.wait_for_attach(timeout)
 
     def send_sms(self, message):
         """ Sends an SMS message to the DUT.
@@ -543,6 +639,14 @@ class BaseStation(object):
         """
         self._cc.set_target_ul_power(ul_power)
 
+    def set_dl_only(self, dl_only):
+        """Sets if the cell should be in downlink only mode.
+
+        Args:
+            dl_only: bool indicating if the cell should be downlink only.
+        """
+        self._cell.dl_only = dl_only
+
     def start(self):
         """Starts the cell."""
         self._cell.start()
@@ -551,19 +655,20 @@ class BaseStation(object):
         """Stops the cell."""
         self._cell.stop()
 
-    def wait_cell_on(self, timeout):
-        """Waits the cell on.
+    def wait_cell_enabled(self, timeout, enabled):
+        """Waits for the requested cell state.
 
         Args:
             timeout: the time for waiting the cell on.
+            enabled: true if the cell should be enabled.
 
         Raises:
             CmxError on time out.
         """
         waiting_time = 0
         while waiting_time < timeout:
-            if self._cell.is_on():
-                return True
+            if self._cell.is_on() == enabled:
+                return enabled
             waiting_time += 1
             time.sleep(1)
         return self._cell.is_on()
@@ -894,6 +999,13 @@ class LteBaseStation(BaseStation):
         else:
             self._cell.stub.SetPuschCommonConfig(True)
 
+    def wait_for_attach(self, timeout):
+        self._cmx.dut.signaling.wait_for_lte_attach(self._cell, timeout)
+
+    def attach_as_secondary_cell(self):
+        """Attach this cell as a secondary cell."""
+        self._cmx.dut.signaling.ca_add_scell(self._cell)
+
 
 class NrBaseStation(BaseStation):
     """ NR base station."""
@@ -963,7 +1075,22 @@ class NrBaseStation(BaseStation):
         logger.info('Configure scheduler succeeds')
         self._network.apply_changes()
 
-    def attach_as_secondary_cell(self, endc_timer=DEFAULT_ENDC_TIMER):
+    def wait_for_attach(self, timeout):
+        self._cmx.dut.signaling.wait_for_nr_registration(self._cell)
+
+    def attach_as_secondary_cell(self, scg=False):
+        """Attach this cell as a secondary cell.
+
+        Args:
+            scg: bool specifing if the cell should be added as part of the
+                secondary cell group.
+        """
+        if scg:
+            self._cmx.dut.signaling.ca_add_scg_scell(self._cell)
+        else:
+            self._cmx.dut.signaling.ca_add_scell(self._cell)
+
+    def activate_endc(self, endc_timer=DEFAULT_ENDC_TIMER):
         """Enable endc mode for NR cell.
 
         Args:
