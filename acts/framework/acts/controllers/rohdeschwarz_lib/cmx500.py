@@ -714,8 +714,12 @@ class LteBaseStation(BaseStation):
         if ul_mcs:
             log_list.append('ul_mcs: {}'.format(ul_mcs))
         if dl_rb_alloc:
+            if not isinstance(dl_rb_alloc, tuple):
+                dl_rb_alloc = (0, dl_rb_alloc)
             log_list.append('dl_rb_alloc: {}'.format(dl_rb_alloc))
         if ul_rb_alloc:
+            if not isinstance(ul_rb_alloc, tuple):
+                ul_rb_alloc = (0, ul_rb_alloc)
             log_list.append('ul_rb_alloc: {}'.format(ul_rb_alloc))
         if dl_dci_ncce:
             dl_dci_ncce = PdcchFormat(dl_dci_ncce)
