@@ -66,6 +66,7 @@ if sys.version_info < (3, 7):
     versioned_deps['protobuf'] = 'protobuf==3.20.1'
     versioned_deps['grpcio'] = 'grpcio==1.48.2'
     versioned_deps['typing_extensions'] = 'typing_extensions==4.1.1'
+    versioned_deps['cryptography'] = 'cryptography<41.0'
 if (sys.version_info.major, sys.version_info.minor) == (3, 6):
     versioned_deps['dataclasses'] = 'dataclasses==0.8'
 if sys.version_info < (3, 6):
