@@ -41,3 +41,54 @@ def on_emm_registered(callback):
     sub = EmmAttachPub.multi_subscribe(callback=wrapped)
 
     return lambda: sub.unsubscribe()
+
+
+def on_mm5g_registered(callback):
+    """Registers a callback to watch for MM5G register events.
+
+    Args:
+        callback: a callback to be invoked on MM5G register events.
+
+    Returns:
+        cancel: a callback to deregister the event watcher.
+    """
+    from rs_mrt.testenvironment.signaling.sri.nas.fivegs.pubsub import (
+        Mm5gRegistrationPub)
+    from rs_mrt.testenvironment.signaling.sri.nas.fivegs import (
+        Mm5gRegistrationState)
+
+    def wrapped(msg):
+        logger.info("CMX received MM registration state: {}".format(
+            msg.registration_state))
+        if msg.registration_state in (
+                Mm5gRegistrationState.REGISTERED_3GPP_ONLY, ):
+            callback()
+
+    sub = Mm5gRegistrationPub.multi_subscribe(callback=wrapped)
+
+    return lambda: sub.unsubscribe()
+
+
+def on_fiveg_pdu_session_activate(callback):
+    """Registers a callback to watch for 5G PDU session to become active.
+
+    Args:
+        callback: a callback to be invoked on 5G PDU session activate events.
+
+    Returns:
+        cancel: a callback to deregister the event watcher.
+    """
+    from rs_mrt.testenvironment.signaling.sri.nas.fivegs.pubsub import (
+        FivegsPduSessionPub)
+    from rs_mrt.testenvironment.signaling.sri.nas.fivegs import (
+        FivegsPduSessionStatus)
+
+    def wrapped(msg):
+        logger.info("CMX received 5G PDU state: {}".format(
+            msg.pdu_session_status))
+        if msg.pdu_session_status in (FivegsPduSessionStatus.ACTIVE, ):
+            callback()
+
+    sub = FivegsPduSessionPub.multi_subscribe(callback=wrapped)
+
+    return lambda: sub.unsubscribe()
