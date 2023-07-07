@@ -45,11 +45,12 @@ class AbstractCellularSimulator:
         """ Configures the equipment for an LTE simulation. """
         raise NotImplementedError()
 
-    def set_band_combination(self, bands):
-        """ Prepares the test equipment for the indicated CA combination.
+    def set_band_combination(self, bands, mimo_modes):
+        """ Prepares the test equipment for the indicated band/mimo combination.
 
         Args:
             bands: a list of bands represented as ints or strings
+            mimo_modes: a list of LteSimulation.MimoMode to use for each antenna
         """
         raise NotImplementedError()
 
@@ -121,8 +122,8 @@ class AbstractCellularSimulator:
 
         if config.scheduling_mode:
 
-            if (config.scheduling_mode ==
-                    cellular_lib.LteSimulation.SchedulingMode.STATIC
+            if (config.scheduling_mode
+                    == cellular_lib.LteSimulation.SchedulingMode.STATIC
                     and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
                              and config.ul_mcs)):
                 raise ValueError('When the scheduling mode is set to manual, '
@@ -192,8 +193,8 @@ class AbstractCellularSimulator:
 
         if config.scheduling_mode:
 
-            if (config.scheduling_mode ==
-                    cellular_lib.LteSimulation.SchedulingMode.STATIC
+            if (config.scheduling_mode
+                    == cellular_lib.LteSimulation.SchedulingMode.STATIC
                     and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
                              and config.ul_mcs)):
                 raise ValueError('When the scheduling mode is set to manual, '
@@ -424,6 +425,30 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             offset: Number in range 0 to (long cycle - 1)
+        """
+        raise NotImplementedError()
+
+    def set_apn(self, apn):
+        """ Configures the callbox network Access Point Name.
+
+        Args:
+            apn: the APN name
+        """
+        raise NotImplementedError()
+
+    def set_ip_type(self, ip_type):
+        """ Configures the callbox network IP type.
+
+        Args:
+            ip_type: the network type to use.
+        """
+        raise NotImplementedError()
+
+    def set_mtu(self, mtu):
+        """ Configures the callbox network Maximum Transmission Unit.
+
+        Args:
+            mtu: the MTU size.
         """
         raise NotImplementedError()
 
