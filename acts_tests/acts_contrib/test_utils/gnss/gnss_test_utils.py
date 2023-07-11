@@ -2837,38 +2837,25 @@ def bcm_gps_ignore_warmstandby(ad):
     Args:
         ad: An AndroidDevice object.
     """
-    search_line_tag = '<gll\n'
-    delete_line_str = 'WarmStandbyTimeout1Seconds'
+    search_line_tag = 'gll'
+    delete_line_str = ['WarmStandbyTimeout1Seconds', 'WarmStandbyTimeout2Seconds']
     bcm_gps_xml_update_option(ad,
-                              "delete",
-                              search_line_tag,
-                              append_txt=None,
-                              update_txt=None,
-                              delete_txt=delete_line_str)
-
-    search_line_tag = '<gll\n'
-    delete_line_str = 'WarmStandbyTimeout2Seconds'
-    bcm_gps_xml_update_option(ad,
-                              "delete",
-                              search_line_tag,
-                              append_txt=None,
-                              update_txt=None,
-                              delete_txt=delete_line_str)
+                              child_tag=search_line_tag,
+                              items_to_delete=delete_line_str)
 
 def bcm_gps_ignore_rom_alm(ad):
     """ Update BCM gps.xml with ignoreRomAlm="True"
     Args:
         ad: An AndroidDevice object.
     """
-    search_line_tag = '<hal\n'
-    append_line_str = ['       IgnoreJniTime=\"true\"\n']
-    bcm_gps_xml_update_option(ad, "add", search_line_tag, append_line_str)
+    search_line_tag = 'hal'
+    append_line_str = {"IgnoreJniTime":"true",
+                       "AutoColdStartSignal":"SIMULATED"}
+    bcm_gps_xml_update_option(ad, child_tag=search_line_tag, items_to_update=append_line_str)
 
-    search_line_tag = '<gll\n'
-    append_line_str = ['       IgnoreRomAlm=\"true\"\n',
-                       '       AutoColdStartSignal=\"SIMULATED\"\n',
-                       '       IgnoreJniTime=\"true\"\n']
-    bcm_gps_xml_update_option(ad, "add", search_line_tag, append_line_str)
+    search_line_tag = "gll"
+    append_line_str = {"IgnoreRomAlm":"true"}
+    bcm_gps_xml_update_option(ad, child_tag=search_line_tag, items_to_update=append_line_str)
 
 
 def check_inject_time(ad):
