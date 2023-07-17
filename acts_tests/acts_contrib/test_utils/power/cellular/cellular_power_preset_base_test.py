@@ -289,6 +289,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         self.unpack_userparams(collect_log_only=False)
         # get sdim type
         self.unpack_userparams(has_3gpp_sim=True)
+        # extract time to take log after test
+        self.unpack_userparams(post_test_log_duration=30)
 
         # toggle on/off APM for all devices
         self.log.info('Toggle APM on/off for all devices.')
@@ -358,7 +360,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                     return
             raise RuntimeError(f'Fail to set modem logging to {new_state}.')
 
-    def collect_modem_log(self, out_path, duration: int=15):
+    def collect_modem_log(self, out_path, duration: int=30):
         # set log mask
         modem_logs.set_modem_log_profle(self.cellular_dut.ad, modem_logs.ModemLogProfile.LASSEN_TCP_DSP)
 
@@ -610,7 +612,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         else:
             if self.is_mdstest_supported:
                 try:
-                    self.collect_modem_log(self.modem_log_path)
+                    self.collect_modem_log(self.modem_log_path, self.post_test_log_duration)
                 except RuntimeError:
                     self.log.warning('Fail to collect log before test end.')
         self.log.info('===>Before test end info.<====')
