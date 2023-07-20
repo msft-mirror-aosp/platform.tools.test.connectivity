@@ -185,6 +185,9 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     ODPM_ENERGY_TABLE_NAME = 'PowerStats HAL 2.0 energy meter'
     ODPM_MODEM_CHANNEL_NAME = '[VSYS_PWR_MODEM]:Modem'
 
+    # Pass fail threshold lower bound
+    THRESHOLD_TOLERANCE_LOWER_BOUND_DEFAULT = 0.25
+
     # Key for custom_property in Sponge
     CUSTOM_PROP_KEY_BUILD_ID = 'build_id'
     CUSTOM_PROP_KEY_INCR_BUILD_ID = 'incremental_build_id'
@@ -211,6 +214,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     MODEM_RFFE_RAIL_NAME = 'VSYS_PWR_RFFE'
 
     MODEM_POWER_RAIL_NAME = 'VSYS_PWR_MODEM'
+
+    MODEM_POWER_RAIL_WO_PCIE_NAME = 'VSYS_PWR_MODEM_W_O_PCIE'
 
     WEARABLE_POWER_RAIL = 'LTE_DC'
 
@@ -567,25 +572,44 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         voltage = self.cellular_test_params['mon_voltage']
         average_power = self.system_power
         if hasattr(self, 'bitses'):
-            average_power = self.modem_power - self.pcie_power
+            average_power = self.modem_power
+            if ('modem_rail' in self.threshold.keys() and self.threshold['modem_rail'] == self.MODEM_POWER_RAIL_WO_PCIE_NAME):
+                average_power = average_power - self.pcie_power
         average_current = average_power / voltage
         current_threshold = self.threshold[self.test_name]
-        acceptable_difference = max(
+
+        acceptable_upper_difference = max(
             self.threshold[self.test_name] * self.pass_fail_tolerance,
             self.kibble_error_range
         )
+        self.log.info('acceptable upper difference' + str(acceptable_upper_difference))
+
+        self.unpack_userparams(pass_fail_tolerance_lower_bound=self.THRESHOLD_TOLERANCE_LOWER_BOUND_DEFAULT)
+        acceptable_lower_difference = max(
+            self.threshold[self.test_name] * self.pass_fail_tolerance_lower_bound,
+            self.kibble_error_range)
+        self.log.info('acceptable lower diff ' + str(acceptable_lower_difference))
+
         if average_current:
             asserts.assert_true(
-                abs(average_current - current_threshold) < acceptable_difference,
+                average_current < current_threshold + acceptable_upper_difference,
                 'Measured average current in [{}]: {:.2f}mA, which is '
-                'out of the acceptable range {:.2f}±{:.2f}mA'.format(
+                'out of the acceptable upper range {:.2f}+{:.2f}mA'.format(
                     self.test_name, average_current, current_threshold,
-                    acceptable_difference))
+                    acceptable_upper_difference))
+
+            asserts.assert_true(
+                average_current > current_threshold - acceptable_lower_difference,
+                'Measured average current in [{}]: {:.2f}mA, which is '
+                'out of the acceptable lower range {:.2f}-{:.2f}mA'.format(
+                    self.test_name, average_current, current_threshold,
+                    acceptable_lower_difference))
+
             asserts.explicit_pass(
                 'Measurement finished for [{}]: {:.2f}mA, which is '
-                'within the acceptable range {:.2f}±{:.2f}'.format(
+                'within the acceptable range of {:.2f}-{:.2f} and {:.2f}+{:.2f}'.format(
                     self.test_name, average_current, current_threshold,
-                    acceptable_difference))
+                    acceptable_lower_difference, current_threshold, acceptable_upper_difference))
         else:
             asserts.fail(
                 'Something happened, measurement is not complete, test failed')
