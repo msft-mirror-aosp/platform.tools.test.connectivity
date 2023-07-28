@@ -16,6 +16,7 @@
 """Provides cmw500 handover functionality."""
 
 from enum import Enum
+import time
 
 from acts.controllers import handover_simulator as hs
 from acts.controllers.rohdeschwarz_lib import cmw500
@@ -30,6 +31,9 @@ class HandoverMode(Enum):
 
 class Cmw500HandoverSimulator(hs.AbstractHandoverSimulator):
     """Provides methods for performing inter/intra-RAT handovers."""
+
+    ATTACH_TIMEOUT = 30
+    SETTLING_TIME = 15
 
     def __init__(self, cmw):
         """Init method to setup handover controller.
@@ -83,7 +87,11 @@ class Cmw500HandoverSimulator(hs.AbstractHandoverSimulator):
             source: the source handover manager.
             destination: the destination handover manager.
         """
-        if not source.is_attached:
+        for _ in range(self.ATTACH_TIMEOUT):
+            if source.is_attached:
+                break
+            time.sleep(1)
+        else:
             raise hs.HandoverSimulatorError(
                 "Unable to perform handover, source signalling application is not attached."
             )
@@ -94,11 +102,10 @@ class Cmw500HandoverSimulator(hs.AbstractHandoverSimulator):
                 cmw500.SignallingState.ReadyForHandover.value,
                 cmw500.SignallingState.ON.value
             ])
-            source.handover_mode = HandoverMode.Redirection
         else:
             destination.wait_for_signalling_state(
                 [cmw500.SignallingState.ReadyForHandover.value])
-            source.handover_mode = HandoverMode.Handover
+        source.handover_mode = HandoverMode.Redirection
 
     def _perform_handover(self, source, destination):
         """Performs the handover and wait for completion.
@@ -113,6 +120,7 @@ class Cmw500HandoverSimulator(hs.AbstractHandoverSimulator):
             source.stop_signalling()
 
         self.cmw.wait_until_quiet()
+        time.sleep(self.SETTLING_TIME)
 
     def _get_handover_manager(self, technology):
         """Gets the handover manager for the specified technology.
@@ -133,7 +141,6 @@ class Cmw500HandoverSimulator(hs.AbstractHandoverSimulator):
 
 class Cmw500HandoverManagerBase():
     """Provides common CMW500 functionality for conducting handovers."""
-
     def __init__(self, cmw, technology):
         """Initializes handover controller.
 
