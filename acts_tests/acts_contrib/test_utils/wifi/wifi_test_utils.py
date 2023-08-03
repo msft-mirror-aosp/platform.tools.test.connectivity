@@ -2966,3 +2966,20 @@ def disable_wear_wifimediator(ad, state):
         ad.adb.shell("settings put global cw_disable_wifimediator 0")
         asserts.assert_false(get_wear_wifimediator_disable_status(ad),
                              "WearWifiMediator should be enabled")
+
+def list_scan_results(ad, wait_time=15):
+    """
+    Initiates an Android Wi-Fi scan and retrieves the available Wi-Fi networks'.
+
+    Args:
+        ad (AndroidDevice): The Android device on which the scan is performed.
+        wait_time (int, optional):
+          The time in seconds to wait for the scan to complete before fetching results.
+          Default is 10 seconds.
+    """
+    ad.log.info("Start scan for available Wi-Fi networks...")
+    ad.adb.shell("cmd wifi start-scan")
+    ad.log.info("Wait %ss for scan to complete.", wait_time)
+    time.sleep(wait_time)
+    scan_results = ad.adb.shell("cmd wifi list-scan-results")
+    ad.log.info("Available Wi-Fi networks: " + "\n" + scan_results + "\n")
