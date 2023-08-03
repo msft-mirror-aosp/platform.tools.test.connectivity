@@ -13,6 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import time
 
 from acts import asserts
@@ -22,6 +23,8 @@ from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 MAX_ATTN = 95
+WAIT_WIFI_SCAN_RESULTS_SEC = 10
+WAIT_ATTENUATION_SEC = 5
 
 class WifiPnoTest(WifiBaseTest):
 
@@ -42,8 +45,11 @@ class WifiPnoTest(WifiBaseTest):
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
         elif "OpenWrtAP" in self.user_params:
-            self.configure_openwrt_ap_and_start(wpa_network=True,
-                                                ap_count=2)
+            self.configure_openwrt_ap_and_start(wpa_network=True, ap_count=2)
+            for i in range(len(self.user_params["OpenWrtAP"])):
+              self.openwrt = self.access_points[i]
+              logging.info(
+                f"AP{i+1}: {self.openwrt.get_bssids_for_wifi_networks()}")
         self.pno_network_a = self.reference_networks[0]['2g']
         self.pno_network_b = self.reference_networks[0]['5g']
         if "OpenWrtAP" in self.user_params:
@@ -54,6 +60,9 @@ class WifiPnoTest(WifiBaseTest):
         self.attenuators[2].set_atten(MAX_ATTN)
         self.attenuators[3].set_atten(MAX_ATTN)
         self.set_attns("default")
+        # Scan for WiFi networks right after APs launched and attenuators set.
+        time.sleep(WAIT_ATTENUATION_SEC)
+        wutils.list_scan_results(self.dut)
 
     def setup_test(self):
         super().setup_test()
@@ -62,9 +71,6 @@ class WifiPnoTest(WifiBaseTest):
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
-        # DUT to the saved networks so they won't be excluded from PNO scan.
-        wutils.connect_to_wifi_network(self.dut, self.pno_network_a)
-        wutils.connect_to_wifi_network(self.dut, self.pno_network_b)
 
     def teardown_test(self):
         super().teardown_test()
@@ -96,32 +102,33 @@ class WifiPnoTest(WifiBaseTest):
                            attn_val_name)
             raise
 
-    def trigger_pno_and_assert_connect(self, attn_val_name, expected_con):
+    def trigger_pno_and_assert_connect(self, ad, attn_val_name, expected_con):
         """Sets attenuators to disconnect current connection to trigger PNO.
         Validate that the DUT connected to the new SSID as expected after PNO.
 
         Args:
+            ad: Android Device to trigger PNO on.
             attn_val_name: Name of the attenuation value pair to use.
             expected_con: The expected info of the network to we expect the DUT
                 to roam to.
         """
-        connection_info = self.dut.droid.wifiGetConnectionInfo()
-        self.log.info("Triggering PNO connect from %s to %s",
+        connection_info = ad.droid.wifiGetConnectionInfo()
+        ad.log.info("Triggering PNO connect from %s to %s",
                       connection_info[WifiEnums.SSID_KEY],
                       expected_con[WifiEnums.SSID_KEY])
         self.set_attns(attn_val_name)
-        self.log.info("Wait %ss for PNO to trigger.", self.pno_interval)
+        ad.log.info("Wait %ss for triggering PNO.", self.pno_interval)
         time.sleep(self.pno_interval)
         try:
-            self.log.info("Connected to %s network after PNO interval"
-                          % self.dut.droid.wifiGetConnectionInfo())
+            ad.log.info("Expect it's connected to %s after PNO interval"
+                          % ad.droid.wifiGetConnectionInfo())
             expected_ssid = expected_con[WifiEnums.SSID_KEY]
             verify_con = {WifiEnums.SSID_KEY: expected_ssid}
-            wutils.verify_wifi_connection_info(self.dut, verify_con)
-            self.log.info("Connected to %s successfully after PNO",
+            wutils.verify_wifi_connection_info(ad, verify_con)
+            ad.log.info("Connected to %s successfully after PNO",
                           expected_ssid)
             wutils.verify_11ax_wifi_connection(
-                self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
+                ad, self.wifi6_models, "wifi6_ap" in self.user_params)
         finally:
             pass
 
@@ -162,9 +169,12 @@ class WifiPnoTest(WifiBaseTest):
         3. Attenuate 5Ghz network and wait for a few seconds to trigger PNO.
         4. Check the device connected to 2Ghz network automatically.
         """
-        self.add_network_and_enable(self.pno_network_a)
-        self.add_network_and_enable(self.pno_network_b)
-        self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
+        # DUT connects to the saved networks so they won't be excluded from PNO scan.
+        wutils.connect_to_wifi_network(self.dut, self.pno_network_a)
+        wutils.connect_to_wifi_network(self.dut, self.pno_network_b)
+        self.trigger_pno_and_assert_connect(self.dut,
+                                            "a_on_b_off",
+                                            self.pno_network_a)
 
     @test_tracker_info(uuid="39b945a1-830f-4f11-9e6a-9e9641066a96")
     def test_simple_pno_connection_2g_to_5g(self):
@@ -175,11 +185,13 @@ class WifiPnoTest(WifiBaseTest):
         2. Save 2 valid network configurations (a & b) in the device.
         3. Attenuate 2Ghz network and wait for a few seconds to trigger PNO.
         4. Check the device connected to 5Ghz network automatically.
-
         """
-        self.add_network_and_enable(self.pno_network_a)
-        self.add_network_and_enable(self.pno_network_b)
-        self.trigger_pno_and_assert_connect("b_on_a_off", self.pno_network_b)
+        # DUT connects to the saved networks so they won't be excluded from PNO scan.
+        wutils.connect_to_wifi_network(self.dut, self.pno_network_b)
+        wutils.connect_to_wifi_network(self.dut, self.pno_network_a)
+        self.trigger_pno_and_assert_connect(self.dut,
+                                            "b_on_a_off",
+                                            self.pno_network_b)
 
     @test_tracker_info(uuid="844b15be-ff45-4b09-a11b-0b2b4bb13b22")
     def test_pno_connection_with_multiple_saved_networks(self):
@@ -193,14 +205,17 @@ class WifiPnoTest(WifiBaseTest):
         Steps:
         1. Save 16 test network configurations in the device.
         2. Add 2 connectable networks and do a normal scan.
-        3. Trigger PNO scan
+        3. Trigger PNO scan.
         """
         self.add_and_enable_test_networks(16)
-        self.add_network_and_enable(self.pno_network_a)
-        self.add_network_and_enable(self.pno_network_b)
+        # DUT connects to the saved networks so they won't be excluded from PNO scan.
+        wutils.connect_to_wifi_network(self.dut, self.pno_network_b)
+        wutils.connect_to_wifi_network(self.dut, self.pno_network_a)
         # Force single scan so that both networks become preferred before PNO.
         wutils.start_wifi_connection_scan_and_return_status(self.dut)
         time.sleep(10)
-        self.trigger_pno_and_assert_connect("b_on_a_off", self.pno_network_b)
+        self.trigger_pno_and_assert_connect(self.dut,
+                                            "b_on_a_off",
+                                            self.pno_network_b)
 
     """ Tests End """
