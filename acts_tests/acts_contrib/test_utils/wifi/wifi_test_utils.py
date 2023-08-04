@@ -369,6 +369,9 @@ class WifiEnums():
         5795: 159,
         5805: 161,
         5825: 165,
+        5845: 169,
+        5865: 173,
+        5885: 177
     }
 
     # All Wifi channels to frequencies lookup.
@@ -435,7 +438,10 @@ class WifiEnums():
         157: 5785,
         159: 5795,
         161: 5805,
-        165: 5825
+        165: 5825,
+        169: 5845,
+        173: 5865,
+        177: 5885
     }
 
     channel_6G_to_freq = {4 * x + 1: 5955 + 20 * x for x in range(59)}
@@ -493,7 +499,7 @@ class WifiChannelUS(WifiChannelBase):
                 ]
         self.DFS_5G_FREQUENCIES = [
             5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5600, 5620,
-            5640, 5660, 5680, 5700, 5720
+            5640, 5660, 5680, 5700, 5720, 5845, 5865, 5885
             ]
         self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
 
