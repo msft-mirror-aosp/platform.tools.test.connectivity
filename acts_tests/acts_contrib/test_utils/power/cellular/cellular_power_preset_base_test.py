@@ -278,6 +278,14 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             self.at_util.disable_txas()
             time.sleep(10)
 
+            # set device to be data centric
+            nv_result = self.set_nv(
+                nv_name = '!!SAEL3.SAE_UE_OPERATION_MODE',
+                index = '0',
+                value = '03'
+            )
+            self.log.info(nv_result)
+
             self.at_util.lock_band()
             self.log.info('Band lock info: \n%s',self.at_util.get_band_lock_info())
 
