@@ -68,7 +68,6 @@ class WifiStressTest(WifiBaseTest):
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
             "stress_count", "stress_hours", "attn_vals", "pno_interval",
-            "iperf_server_port"
         ]
         self.unpack_userparams(req_param_names=req_params,
                                opt_param_names=opt_param)
@@ -87,6 +86,12 @@ class WifiStressTest(WifiBaseTest):
         self.open_2g = self.open_network[0]["2g"]
         self.open_5g = self.open_network[0]["5g"]
         self.networks = [self.wpa_2g, self.wpa_5g, self.open_2g, self.open_5g]
+
+        # Use local host as iperf server.
+        if "IPerfServer" in self.user_params:
+            self.iperf_server = self.iperf_servers[0]
+            wutils.kill_iperf3_server_by_port(self.iperf_server.port)
+            self.iperf_server.start()
 
     def setup_test(self):
         super().setup_test()
@@ -107,6 +112,8 @@ class WifiStressTest(WifiBaseTest):
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
+        if "IPerfServer" in self.user_params:
+            self.iperf_server.stop()
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
@@ -315,7 +322,7 @@ class WifiStressTest(WifiBaseTest):
                 self.scan_and_connect_by_id(self.wpa_5g, net_id)
                 # Start IPerf traffic from phone to server.
                 # Upload data for 10s.
-                args = "-p {} -t {}".format(self.iperf_server_port, 10)
+                args = "-p {} -t {}".format(self.iperf_server.port, 10)
                 self.log.info("Running iperf client {}".format(args))
                 result, data = self.dut.run_iperf_client(
                     self.iperf_server_address, args)
@@ -357,7 +364,7 @@ class WifiStressTest(WifiBaseTest):
         sec = self.stress_hours * 60 * 60
         start_time = time.time()
 
-        dl_args = "-p {} -t {} -b1M -R".format(self.iperf_server_port, sec)
+        dl_args = "-p {} -t {} -b1M -R".format(self.iperf_server.port, sec)
         dl = threading.Thread(target=self.run_long_traffic,
                               args=(sec, dl_args, q))
         dl.start()
@@ -641,7 +648,7 @@ class WifiStressTest(WifiBaseTest):
                 time.sleep(DEFAULT_TIMEOUT)
                 # Start IPerf traffic from phone to server.
                 # Upload data for 10s.
-                args = "-p {} -t {}".format(self.iperf_server_port, 10)
+                args = "-p {} -t {}".format(self.iperf_server.port, 10)
                 self.log.info("Running iperf client {}".format(args))
                 result, data = self.dut.run_iperf_client(
                     self.iperf_server_address, args)
