@@ -284,8 +284,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             time.sleep(10)
 
             # set device to be data centric
-            nv_result = self.set_nv(
-                nv_name = '!!SAEL3.SAE_UE_OPERATION_MODE',
+            nv_result = self.at_util.set_nv(
+                nv_name = '!SAEL3.SAE_UE_OPERATION_MODE',
                 index = '0',
                 value = '03'
             )
