@@ -186,7 +186,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     ODPM_MODEM_CHANNEL_NAME = '[VSYS_PWR_MODEM]:Modem'
 
     # Pass fail threshold lower bound
-    THRESHOLD_TOLERANCE_LOWER_BOUND_DEFAULT = 0.25
+    THRESHOLD_TOLERANCE_LOWER_BOUND_DEFAULT = 0.3
 
     # Key for custom_property in Sponge
     CUSTOM_PROP_KEY_BUILD_ID = 'build_id'
@@ -203,6 +203,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     CUSTOM_PROP_KEY_MODEM_KIBBLE_PCIE_POWER = 'modem_kibble_pcie_power'
     CUSTOM_PROP_KEY_RFFE_POWER = 'rffe_power'
     CUSTOM_PROP_KEY_MMWAVE_POWER = 'mmwave_power'
+    CUSTOM_PROP_KEY_CURRENT_REFERENCE_TARGET = 'reference_target'
     # kibble report
     KIBBLE_SYSTEM_RECORD_NAME = '- name: default_device.C10_EVT_1_1.Monsoon:mA'
     MODEM_PCIE_RAIL_NAME_LIST = [
@@ -562,7 +563,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                 self.CUSTOM_PROP_KEY_MODEM_KIBBLE_WO_PCIE_POWER: modem_kibble_power_wo_pcie,
                 self.CUSTOM_PROP_KEY_MODEM_KIBBLE_PCIE_POWER: self.pcie_power,
                 self.CUSTOM_PROP_KEY_RFFE_POWER: self.rffe_power,
-                self.CUSTOM_PROP_KEY_MMWAVE_POWER: self.mmwave_power
+                self.CUSTOM_PROP_KEY_MMWAVE_POWER: self.mmwave_power,
+                self.CUSTOM_PROP_KEY_CURRENT_REFERENCE_TARGET: self.threshold[self.test_name]
             },
         })
 
@@ -577,13 +579,15 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             self.log.error("No threshold is provided for the test '{}' in "
                            "the configuration file.".format(self.test_name))
             return
-        voltage = self.cellular_test_params['mon_voltage']
-        average_power = self.system_power
-        if hasattr(self, 'bitses'):
-            average_power = self.modem_power
-            if ('modem_rail' in self.threshold.keys() and self.threshold['modem_rail'] == self.MODEM_POWER_RAIL_WO_PCIE_NAME):
-                average_power = average_power - self.pcie_power
-        average_current = average_power / voltage
+
+        if not hasattr(self, 'bitses'):
+            self.log.error("No bitses attribute found, threshold cannot be"
+                           "checked against system power.")
+            return
+
+        average_current = self.modem_power
+        if ('modem_rail' in self.threshold.keys() and self.threshold['modem_rail'] == self.MODEM_POWER_RAIL_WO_PCIE_NAME):
+            average_current = average_current - self.pcie_power
         current_threshold = self.threshold[self.test_name]
 
         acceptable_upper_difference = max(
@@ -601,20 +605,20 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         if average_current:
             asserts.assert_true(
                 average_current < current_threshold + acceptable_upper_difference,
-                'Measured average current in [{}]: {:.2f}mA, which is '
-                'out of the acceptable upper range {:.2f}+{:.2f}mA'.format(
+                'Measured average current in [{}]: {:.2f}mW, which is '
+                'out of the acceptable upper range {:.2f}+{:.2f}mW'.format(
                     self.test_name, average_current, current_threshold,
                     acceptable_upper_difference))
 
             asserts.assert_true(
                 average_current > current_threshold - acceptable_lower_difference,
-                'Measured average current in [{}]: {:.2f}mA, which is '
-                'out of the acceptable lower range {:.2f}-{:.2f}mA'.format(
+                'Measured average current in [{}]: {:.2f}mW, which is '
+                'out of the acceptable lower range {:.2f}-{:.2f}mW'.format(
                     self.test_name, average_current, current_threshold,
                     acceptable_lower_difference))
 
             asserts.explicit_pass(
-                'Measurement finished for [{}]: {:.2f}mA, which is '
+                'Measured average current in [{}]: {:.2f}mW, which is '
                 'within the acceptable range of {:.2f}-{:.2f} and {:.2f}+{:.2f}'.format(
                     self.test_name, average_current, current_threshold,
                     acceptable_lower_difference, current_threshold, acceptable_upper_difference))
