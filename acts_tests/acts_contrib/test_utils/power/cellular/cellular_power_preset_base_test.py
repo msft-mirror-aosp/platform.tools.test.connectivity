@@ -547,6 +547,11 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         else:
             self.system_power = self.power_results.get(self.test_name, 0)
 
+        # record reference target, if it exists
+        self.reference_target = ''
+        if self.threshold and self.test_name in self.threshold:
+            self.reference_target = self.threshold[self.test_name]
+
         self.record_data({
             'Test Name': self.test_name,
             'sponge_properties': {
@@ -564,7 +569,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                 self.CUSTOM_PROP_KEY_MODEM_KIBBLE_PCIE_POWER: self.pcie_power,
                 self.CUSTOM_PROP_KEY_RFFE_POWER: self.rffe_power,
                 self.CUSTOM_PROP_KEY_MMWAVE_POWER: self.mmwave_power,
-                self.CUSTOM_PROP_KEY_CURRENT_REFERENCE_TARGET: self.threshold[self.test_name]
+                self.CUSTOM_PROP_KEY_CURRENT_REFERENCE_TARGET: self.reference_target
             },
         })
 
