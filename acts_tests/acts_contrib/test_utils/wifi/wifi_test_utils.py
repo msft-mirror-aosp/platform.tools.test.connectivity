@@ -18,6 +18,7 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 import time
 
 from retry import retry
@@ -2993,3 +2994,23 @@ def list_scan_results(ad, wait_time=15):
     time.sleep(wait_time)
     scan_results = ad.adb.shell("cmd wifi list-scan-results")
     ad.log.info("Available Wi-Fi networks: " + "\n" + scan_results + "\n")
+
+def kill_iperf3_server_by_port(port: str):
+    """
+        Kill an iperf3 server process running on the specified port.
+
+        Args:
+            port: The port number on which the iperf3 server is running.
+    """
+    try:
+        ps_output = subprocess.check_output(["ps", "aux"], universal_newlines=True)
+        lines = ps_output.split('\n')
+        for line in lines:
+            if "iperf3" in line and str(port) in line:
+                columns = line.split()
+                pid = columns[1]
+                subprocess.run(["kill", "-15", pid])
+                logging.warning(f"iperf3 server on port {port} already in use,"
+                              f"kill it with PID {pid}")
+    except subprocess.CalledProcessError:
+        logging.info("Error executing shell command with subprocess.")

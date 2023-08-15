@@ -49,7 +49,6 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
 
     def setup_class(self):
         super().setup_class()
-
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
 
@@ -70,12 +69,17 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
 
         req_params = ["dbs_supported_models",
                       "wifi6_models",
-                      "iperf_server_address",
-                      "iperf_server_port"]
+                      "iperf_server_address"]
         self.unpack_userparams(req_param_names=req_params,)
         asserts.abort_class_if(
             self.dut.model not in self.dbs_supported_models,
             "Device %s does not support dual interfaces." % self.dut.model)
+
+        # Use local host as iperf server.
+        if "IPerfServer" in self.user_params:
+            self.iperf_server = self.iperf_servers[0]
+            wutils.kill_iperf3_server_by_port(self.iperf_server.port)
+            self.iperf_server.start()
 
     def setup_test(self):
         super().setup_test()
@@ -105,6 +109,10 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             except KeyError as e:
                 self.log.warn("There is no 'reference_network' or "
                               "'open_network' to delete")
+
+    def teardown_class(self):
+        if "IPerfServer" in self.user_params:
+            self.iperf_server.stop()
 
     ### Helper Functions ###
 
@@ -156,9 +164,11 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             wait_time = 5
             network, ad = params
             ssid = network[WifiEnums.SSID_KEY]
-            self.log.info("Starting iperf traffic through {}".format(ssid))
+            ad.log.info("Starting iperf traffic through {} to {} port:{}".
+                format(ssid, self.iperf_server_address,
+                       self.iperf_server.port))
             time.sleep(wait_time)
-            port_arg = "-p {}".format(self.iperf_server_port)
+            port_arg = "-p {}".format(self.iperf_server.port)
             success, data = ad.run_iperf_client(self.iperf_server_address,
                                                 port_arg)
             self.log.debug(pprint.pformat(data))
@@ -211,13 +221,23 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         Args:
             nw_params: Params for network STA connection.
             softap_band: Band for the AP.
+
+        Raises:
+            TestError if there is iperf traffic connection error.
         """
         wutils.connect_to_wifi_network(self.dut, nw_params, hidden=hidden)
         wutils.verify_11ax_wifi_connection(
             self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         softap_config = self.start_softap_and_verify(softap_band)
-        self.run_iperf_client((nw_params, self.dut))
-        self.run_iperf_client((softap_config, self.dut_client))
+        try:
+            self.run_iperf_client((nw_params, self.dut))
+            self.run_iperf_client((softap_config, self.dut_client))
+        except:
+            raise signals.TestError("Check if the iperf Server {} is "
+                                    "up and running and the Port {} is "
+                                    "listening for requests."
+                                    .format(self.iperf_server_address,
+                                            self.iperf_server.port))
 
         if len(self.android_devices) > 2:
             self.log.info("Testbed has extra devices, do more validation")

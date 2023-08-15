@@ -66,8 +66,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
             "wifi6_models",
         ]
         opt_param = [
-            "iperf_server_address", "reference_networks", "iperf_server_port",
-            "pixel_models"
+            "iperf_server_address", "reference_networks", "pixel_models"
         ]
         self.unpack_userparams(req_param_names=req_params,
                                opt_param_names=opt_param)
@@ -76,6 +75,12 @@ class WifiSoftApAcsTest(WifiBaseTest):
             for k, v in hostapd_constants.CHANNEL_MAP.items()
         }
         self.pcap_procs = None
+
+        # Use local host as iperf server.
+        if "IPerfServer" in self.user_params:
+            self.iperf_server = self.iperf_servers[0]
+            wutils.kill_iperf3_server_by_port(self.iperf_server.port)
+            self.iperf_server.start()
 
     def setup_test(self):
         super().setup_test()
@@ -107,6 +112,10 @@ class WifiSoftApAcsTest(WifiBaseTest):
             pass
         self.access_points[0].close()
 
+    def teardown_class(self):
+        if "IPerfServer" in self.user_params:
+            self.iperf_server.stop()
+
     """Helper Functions"""
 
     def run_iperf_client(self, params):
@@ -120,7 +129,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
             network, ad = params
             SSID = network[WifiEnums.SSID_KEY]
             self.log.info("Starting iperf traffic through {}".format(SSID))
-            port_arg = "-p {} -t {}".format(self.iperf_server_port, 3)
+            port_arg = "-p {} -t {}".format(self.iperf_server.port, 3)
             success, data = ad.run_iperf_client(self.iperf_server_address,
                                                 port_arg)
             self.log.debug(pprint.pformat(data))
