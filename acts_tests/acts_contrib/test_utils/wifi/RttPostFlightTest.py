@@ -41,8 +41,8 @@ class RttPostFlightTest(WifiBaseTest):
         curr_time = time.time()
         while time.time() < curr_time + TIMEOUT:
             time.sleep(WAIT_TIME)
-            if not wutils.start_wifi_connection_scan_and_check_for_network(
-                self.dut, SSID):
+            if wutils.start_wifi_connection_scan_and_check_for_network(
+                self.dut, SSID, False):
                 return True
         self.log.error("Failed to turn off AP")
         return False
