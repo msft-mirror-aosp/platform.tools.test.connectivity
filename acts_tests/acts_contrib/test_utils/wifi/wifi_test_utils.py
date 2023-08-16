@@ -961,7 +961,7 @@ def start_wifi_connection_scan_and_ensure_network_found(
         " after " + str(max_tries) + " tries"
     asserts.assert_true(
         start_wifi_connection_scan_and_check_for_network(
-            ad, network_ssid, max_tries), assert_msg, True)
+            ad, network_ssid, max_tries, True), assert_msg)
 
 
 def start_wifi_connection_scan_and_ensure_network_not_found(
@@ -982,7 +982,7 @@ def start_wifi_connection_scan_and_ensure_network_not_found(
         " after " + str(max_tries) + " tries"
     asserts.assert_true(
         start_wifi_connection_scan_and_check_for_network(
-            ad, network_ssid, max_tries), assert_msg, False)
+            ad, network_ssid, max_tries, False), assert_msg)
 
 
 def start_wifi_background_scan(ad, scan_setting):
