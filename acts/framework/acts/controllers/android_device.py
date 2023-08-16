@@ -472,7 +472,7 @@ class AndroidDevice:
         # Re-create the new adb and sl4a services
         self.register_service(services.AdbLogcatService(self))
         self.register_service(services.Sl4aService(self))
-        self.adb.wait_for_device()
+        self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
         self.terminate_all_sessions()
         self.start_services()
 
