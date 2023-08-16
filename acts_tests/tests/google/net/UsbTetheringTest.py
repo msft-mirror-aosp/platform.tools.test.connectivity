@@ -7,6 +7,9 @@ from scapy.all import get_if_raw_hwaddr
 from scapy.layers.dns import DNS, DNSQR
 from scapy.layers.inet import IP, ICMP, UDP, TCP, RandShort, sr1
 from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
+from scapy.config import conf
+from scapy.sendrecv import send
+import time
 
 DUMSYS_CMD = "dumpsys connectivity tethering"
 UPSTREAM_WANTED_STRING = "Upstream wanted"
@@ -42,6 +45,8 @@ class UsbTetheringTest(base_test.BaseTestClass):
     nutils.start_usb_tethering(self.dut)
     self.dut.recreate_services(serial)
     self.iface = nutils.wait_for_new_iface(iflist_before)
+    conf.route6.resync()
+    self.log.info("USB tethering interface: %s." % self.iface)
     if not self.check_upstream_ready():
       raise asserts.fail("Upstream interface is not active.")
 
@@ -131,6 +136,14 @@ class UsbTetheringTest(base_test.BaseTestClass):
         "Failed to send TCP packet over IPv6, resp: " +
         resp.show(dump=True) if resp else "null")
 
+  def _send_http_get(self, destination, interface):
+    syn_ack = sr1(IP(dst=destination) / TCP(dport=80, flags="S"), timeout=2, iface=interface)
+    send(IP(dst=destination) / TCP(dport=80, sport=syn_ack[TCP].dport,seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='A'), iface=interface)
+    http_get_str = "GET / HTTP/1.1\r\nHost:" + destination + "\r\nAccept-Encoding: gzip, deflate\r\n\r\n"
+    req = IP(dst=destination)/TCP(dport=80, sport=syn_ack[TCP].dport, seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='P''A')/http_get_str
+    return sr1(req, timeout=2, iface=interface, retry = -3, filter = "tcp port 80")
+
+
   @test_tracker_info(uuid="96115afb-e0d3-40a8-8f04-b64cedc6588f")
   def test_http_connectivity(self):
     """Tests connectivity under HTTP.
@@ -140,12 +153,12 @@ class UsbTetheringTest(base_test.BaseTestClass):
     2. Implement TCP 3-way handshake to simulate HTTP GET
     3. Verify that the 3-way handshake works and response contains a TCP layer
     """
-    syn_ack = sr1(IP(dst=DEFAULT_DOMAIN_NAME)
-                  / TCP(dport=80, flags="S"), timeout=2, iface=self.iface)
-    get_str = "GET / HTTP/1.1\r\nHost: " + DEFAULT_DOMAIN_NAME + "\r\n\r\n"
-    req = IP(dst=DEFAULT_DOMAIN_NAME)/TCP(dport=80, sport=syn_ack[TCP].dport,
-             seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags="A")/get_str
-    resp = sr1(req, timeout=2, iface=self.iface)
+    resp = None
+    for _ in range(3):
+      resp = self._send_http_get(DEFAULT_DOMAIN_NAME, self.iface)
+      if resp:
+        break
+      time.sleep(3)
     asserts.assert_true(
         resp and resp.haslayer(TCP),
         "Failed to send HTTP request, resp: " +
