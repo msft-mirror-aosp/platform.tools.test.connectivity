@@ -56,11 +56,12 @@ class OpenWrtAuth:
       os.makedirs('/tmp/openwrt/', exist_ok=True)
 
       # Saves the private key to a file.
-      self.private_key_file = '/tmp/openwrt/id_rsa'
+      self.private_key_file = '/tmp/openwrt/id_rsa_%s' % (self.hostname)
       key.write_private_key_file(self.private_key_file)
+      logging.info(f"Saved private key to file: {self.private_key_file}")
 
       # Saves the public key to a file.
-      self.public_key_file = '/tmp/openwrt/id_rsa.pub'
+      self.public_key_file = '/tmp/openwrt/id_rsa_%s.pub' % (self.hostname)
       with open(self.public_key_file, "w") as f:
           f.write(self.public_key)
       logging.info(f"Saved public key to file: {self.public_key_file}")
@@ -87,8 +88,7 @@ class OpenWrtAuth:
         ssh.connect(hostname=self.hostname,
                     port=self.port,
                     username=self.username,
-                    password=self.password,
-                    key_filename='/tmp/openwrt/id_rsa')
+                    password=self.password)
         with ssh.open_sftp() as sftp:
           sftp.put(self.public_key_file, _REMOTE_PATH)
       logging.info('Public key uploaded successfully.')

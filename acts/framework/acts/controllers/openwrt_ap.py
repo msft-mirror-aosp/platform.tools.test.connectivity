@@ -1,9 +1,9 @@
 """Controller for Open WRT access point."""
 
+import logging
 import random
 import re
 import time
-import logging
 
 from acts import logger
 from acts import signals
