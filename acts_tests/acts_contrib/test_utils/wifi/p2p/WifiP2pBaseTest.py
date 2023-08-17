@@ -64,7 +64,7 @@ class WifiP2pBaseTest(BaseTestClass):
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
         asserts.assert_true(self.dut1.droid.wifiP2pIsEnabled(),
                             "DUT1's p2p should be initialized but it didn't")
-        self.dut1.name = "Android_" + self.dut1.serial
+        self.dut1.name = self.dut1.serial
         self.dut1.droid.wifiP2pSetDeviceName(self.dut1.name)
         wutils.wifi_test_device_init(self.dut2)
         utils.sync_device_time(self.dut2)
@@ -72,7 +72,7 @@ class WifiP2pBaseTest(BaseTestClass):
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
         asserts.assert_true(self.dut2.droid.wifiP2pIsEnabled(),
                             "DUT2's p2p should be initialized but it didn't")
-        self.dut2.name = "Android_" + self.dut2.serial
+        self.dut2.name = self.dut2.serial
         self.dut2.droid.wifiP2pSetDeviceName(self.dut2.name)
 
         if len(self.android_devices) > 2:
@@ -85,7 +85,7 @@ class WifiP2pBaseTest(BaseTestClass):
             asserts.assert_true(
                 self.dut3.droid.wifiP2pIsEnabled(),
                 "DUT3's p2p should be initialized but it didn't")
-            self.dut3.name = "Android_" + self.dut3.serial
+            self.dut3.name = self.dut3.serial
             self.dut3.droid.wifiP2pSetDeviceName(self.dut3.name)
 
     def teardown_class(self):
