@@ -1,6 +1,7 @@
 import logging
 import os
 import paramiko
+import subprocess
 
 
 _REMOTE_PATH = '/etc/dropbear/authorized_keys'
@@ -81,6 +82,19 @@ class OpenWrtAuth:
       Exception: If an unexpected error occurs while sending the public key.
     """
     try:
+      import scp
+      logging.info("scp package is already installed.")
+    except ImportError:
+      logging.info("scp package is not installed. Installing...")
+      try:
+        subprocess.check_call(['pip3', 'install', 'scp'])
+        logging.info("scp package installed successfully.")
+        # Import the 'scp' module after installation.
+        import scp
+      except subprocess.CalledProcessError:
+        logging.info("Error installing scp package.")
+
+    try:
       # Connects to the remote host and uploads the public key.
       logging.info(f"Uploading public key to remote host {self.hostname}...")
       with paramiko.SSHClient() as ssh:
@@ -89,10 +103,13 @@ class OpenWrtAuth:
                     port=self.port,
                     username=self.username,
                     password=self.password)
-        with ssh.open_sftp() as sftp:
-          sftp.put(self.public_key_file, _REMOTE_PATH)
+        scp_client = scp.SCPClient(ssh.get_transport())
+        scp_client.put(self.public_key_file, _REMOTE_PATH)
       logging.info('Public key uploaded successfully.')
-    except (paramiko.AuthenticationException, paramiko.SSHException, FileNotFoundError) as e:
+    except (paramiko.AuthenticationException,
+            paramiko.SSHException,
+            FileNotFoundError) as e:
       logging.error(f"An error occurred while sending the public key: {e}")
     except Exception as e:
-      logging.error(f"An unexpected error occurred while sending the public key: {e}")
+      logging.error(f"An unexpected error occurred while "
+                    f"sending the public key: {e}")
