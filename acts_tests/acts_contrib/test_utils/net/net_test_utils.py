@@ -490,9 +490,9 @@ def set_cap_net_raw_capability():
 
     To send the Scapy packets, we need to get the CAP_NET_RAW capability first.
     """
-    cap_net_raw = "setcap cap_net_raw=eip $(readlink -f $(which act.py))"
+    cap_net_raw = "sudo setcap cap_net_raw=eip $(readlink -f $(which act.py))"
     utils.exe_cmd(cap_net_raw)
-    cap_python = "setcap cap_net_raw=eip $(readlink -f $(which python))"
+    cap_python = "sudo setcap cap_net_raw=eip $(readlink -f $(which python))"
     utils.exe_cmd(cap_python)
 
 
