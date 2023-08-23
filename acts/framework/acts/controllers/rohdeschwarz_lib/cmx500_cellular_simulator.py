@@ -420,6 +420,11 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
                 CellularSimulatorError exception. Default is 120 seconds.
         """
         self.log.info('wait until attached')
+        if len(self.cmx.tracking_areas) > 1:
+            self.log.info('turning off neighbor cells')
+            self.cmx.turn_on_primary_cells()
+            self.cmx.turn_off_neighbor_cells()
+
         self.cmx.wait_until_attached(timeout)
 
     def wait_until_communication_state(self, timeout=120):

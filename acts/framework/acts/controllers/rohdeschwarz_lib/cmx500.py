@@ -200,22 +200,19 @@ class Cmx500(abstract_inst.SocketInstrument):
                 nr_bts.set_band(int(band[1:]))
                 # set secondary cells to dl only to avoid running out of
                 # resources in high CA scenarios
-                if n_nr_cells > 1:
+                if n_nr_cells > 2:
                     nr_bts.set_dl_only(True)
                 n_nr_cells += 1
             else:
                 lte_bts = self._add_lte_cell()
                 lte_bts.set_band(int(band))
-                if n_lte_cells > 1:
+                if n_lte_cells > 2:
                     lte_bts.set_dl_only(True)
                 n_lte_cells += 1
 
         # turn on primary lte and/or nr cells
         self._network.apply_changes()
-        if self.primary_lte_cell:
-            self._switch_on_bts(True, self.primary_lte_cell)
-        if self.primary_nr_cell:
-            self._switch_on_bts(True, self.primary_nr_cell)
+        self.turn_on_primary_cells()
 
     def _add_nr_cell(self):
         """Creates a new NR cell and configures antenna ports."""
@@ -390,7 +387,7 @@ class Cmx500(abstract_inst.SocketInstrument):
             raise ValueError('state should be the instance of LteState.')
 
         if self.primary_lte_cell:
-            self._switch_on_bts(state.value == 'ON', self.primary_lte_cell)
+            self.set_bts_enabled(state.value == 'ON', self.primary_lte_cell)
         else:
             raise CmxError(
                 'Unable to set LTE signalling to {},'.format(state.value) +
@@ -400,13 +397,13 @@ class Cmx500(abstract_inst.SocketInstrument):
         logger.info('Switches on NSA signalling')
 
         if self.primary_lte_cell:
-            self._switch_on_bts(True, self.primary_lte_cell)
+            self.set_bts_enabled(True, self.primary_lte_cell)
         else:
             raise CmxError(
                 'Unable to turn on NSA signalling, no LTE cell found.')
 
         if self.primary_nr_cell:
-            self._switch_on_bts(True, self.primary_nr_cell)
+            self.set_bts_enabled(True, self.primary_nr_cell)
         else:
             raise CmxError(
                 'Unable to turn on NSA signalling, no NR cell found.')
@@ -415,49 +412,117 @@ class Cmx500(abstract_inst.SocketInstrument):
 
     @property
     def primary_cell(self):
-        # return first cell as primary, later will need to differentiate between
-        # neighbor and active cells for handover scenarios.
+        """Gets the primary cell in the current scenario."""
+        # If the simulation has an active cell return it as the primary
+        # otherwise default to the first cell.
+        for cell in self.bts:
+            if cell.is_primary_cell:
+                return cell
+
         return self.bts[0] if self.bts else None
 
     @property
     def primary_lte_cell(self):
-        """Gets the primary LTE cell in the current scenario."""
-        return self.lte_cells[0] if self.lte_cells else None
+        """Gets the primary LTE cell in the current scenario.
+
+        Note: This should generally be the same as primary_cell unless we're
+        connected to a NR cell in a TA with both LTE and NR cells.
+        """
+        cell = self.primary_cell
+        if isinstance(cell, LteBaseStation):
+            return cell
+
+        # find the first cell in the same ta as the primary cell
+        elif cell:
+            cells = self._get_cells_in_same_ta(cell)
+            return next((c for c in cells if isinstance(c, LteBaseStation)),
+                        None)
+
+        return None
 
     @property
     def primary_nr_cell(self):
-        """Gets the primary NR cell in the current scenario."""
-        return self.nr_cells[0] if self.nr_cells else None
+        """Gets the primary NR cell in the current scenario.
+
+        Note: This may be the PSCell for NSA scenarios.
+        """
+        cell = self.primary_cell
+        if cell and isinstance(cell, NrBaseStation):
+            return cell
+
+        elif cell:
+            cells = self._get_cells_in_same_ta(cell)
+            return next((c for c in cells if isinstance(c, NrBaseStation)),
+                        None)
+
+        return None
 
     @property
     def lte_cells(self):
-        """Gets all lte cells in the current scenario."""
+        """Gets all LTE cells in the current scenario."""
         return list(
             [bts for bts in self.bts if isinstance(bts, LteBaseStation)])
 
     @property
     def nr_cells(self):
-        """Gets all nr cells in the current scenario."""
+        """Gets all NR cells in the current scenario."""
         return list(
             [bts for bts in self.bts if isinstance(bts, NrBaseStation)])
 
     @property
     def secondary_lte_cells(self):
-        """Gets all secondary lte cells in the current scenario."""
-        return self.lte_cells[1:] if self.lte_cells else []
+        """Gets a list of all LTE cells in the same TA as the primary cell."""
+        pcell = self.primary_cell
+        if not pcell or not self.lte_cells:
+            return []
+
+        # If NR cell is primary then there are no secondary LTE cells.
+        if not isinstance(pcell, LteBaseStation):
+            return []
+
+        return [
+            c for c in self._get_cells_in_same_ta(pcell)
+            if isinstance(c, LteBaseStation)
+        ]
 
     @property
     def secondary_nr_cells(self):
-        """Gets all secondary nr cells in the current scenario."""
-        return self.nr_cells[1:] if self.nr_cells else []
+        """Gets a list of all NR cells in the same TA as the primary cell."""
+        pcell = self.primary_nr_cell
+        if not pcell or not self.nr_cells:
+            return []
+
+        return [
+            c for c in self._get_cells_in_same_ta(pcell)
+            if isinstance(c, NrBaseStation)
+        ]
 
     @property
     def secondary_cells(self):
         """Gets all secondary cells in the current scenario."""
         return self.secondary_lte_cells + self.secondary_nr_cells
 
-    def _switch_on_bts(self, enabled, bts):
-        """Switch bts signalling on/off."""
+    @property
+    def tracking_areas(self):
+        """Returns a list of LTE and 5G tracking areas in the simulation."""
+        plmn = self._network.get_or_create_plmn()
+        return plmn.eps_ta_list + plmn.fivegs_ta_list
+
+    def _get_cells_in_same_ta(self, bts):
+        """Returns a list of all cells in the same TA."""
+        tracking_area = next(t for t in self.tracking_areas
+                             if bts._cell in t.cells)
+        return [
+            c for c in self.bts if c != bts and c._cell in tracking_area.cells
+        ]
+
+    def set_bts_enabled(self, enabled, bts):
+        """Switch bts signalling on/off.
+
+        Args:
+            enabled: True/False if the  signalling should be enabled.
+            bts: The bts to configure.
+        """
         if enabled and not bts.is_on():
             bts.start()
             state = bts.wait_cell_enabled(self.cell_switch_on_timer, True)
@@ -499,10 +564,34 @@ class Cmx500(abstract_inst.SocketInstrument):
         self._send('CONFigure:SIGNaling:EPS:NBEHavior:KRRC {}'.format(state))
         self._send('CONFigure:SIGNaling:FGS:NBEHavior:KRRC {}'.format(state))
 
+    def turn_off_neighbor_cells(self):
+        """Turns off all cells in other tracking areas."""
+        for cell in self.bts:
+            if not cell.is_active:
+                self.set_bts_enabled(False, cell)
+
+    def turn_on_primary_cells(self):
+        """Turns on all primary cells."""
+        if self.primary_lte_cell:
+            self.set_bts_enabled(True, self.primary_lte_cell)
+        if self.primary_nr_cell:
+            self.set_bts_enabled(True, self.primary_nr_cell)
+
     def turn_on_secondary_cells(self):
         """Turns on all secondary cells."""
         for bts in self.secondary_cells:
-            self._switch_on_bts(True, bts)
+            self.set_bts_enabled(True, bts)
+
+    def handover(self, primary, secondary=None):
+        """Performs a Inter/Intra-RAT handover.
+
+        Args:
+            primary: the new primary bts.
+            secondary: the new secondary bts.
+        """
+        self.dut.signaling.handover_to(primary.cell,
+                                       secondary.cell if secondary else None,
+                                       None)
 
     def wait_for_rrc_state(self, state, timeout=120):
         """ Waits until a certain RRC state is set.
@@ -692,6 +781,27 @@ class BaseStation(object):
 
         new_ta.add_cell(self._cell)
         old_ta.remove_cell(self._cell)
+
+    @property
+    def is_primary_cell(self):
+        """Returns true if the cell is the current primary cell."""
+        return self._cell == self._cmx.dut.state.pcell
+
+    @property
+    def is_active(self):
+        """Returns true if the cell is part of the current simulation.
+
+        A cell is considered "active" if it is the primary cell
+        or is in the same TA as the primary cell, i.e. not a neighbor cell.
+        """
+        return (self == self._cmx.primary_lte_cell
+                or self == self._cmx.primary_nr_cell
+                or self in self._cmx.secondary_cells)
+
+    @property
+    def cell(self):
+        """Returns the underlying XLAPI cell object."""
+        return self._cell
 
 
 class LteBaseStation(BaseStation):
@@ -1328,6 +1438,7 @@ class NrBaseStation(BaseStation):
         """
         plmn = self._network.get_or_create_plmn()
         return plmn.create_fivegs_ta(tac)
+
 
 class CmxError(Exception):
     """Class to raise exceptions related to cmx."""
