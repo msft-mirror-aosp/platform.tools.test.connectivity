@@ -23,8 +23,8 @@ class ModemLogAction(enum.Enum):
 class ModemLogProfile(enum.Enum):
   """All possible modem logging profiles."""
 
-  LASSEN_AUDIO_TCP_DSP = 'GFT_Call_performance.xml'
-  LASSEN_TCP_DSP = 'GFT_Data_Performance.xml'
+  LASSEN_AUDIO_TCP_DSP = 'Call_Performance.xml'
+  LASSEN_TCP_DSP = 'Data_Performance.xml'
 
 
 _MODEM_PILOT_ENABLE_PROP_NAME = 'vendor.pixellogger.pilot.logging_enable'
