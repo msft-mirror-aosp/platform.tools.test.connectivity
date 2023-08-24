@@ -67,7 +67,6 @@ class WifiBridgedApTest(WifiBaseTest):
 
     def setup_test(self):
         super().setup_test()
-        asserts.skip_if(not self.dut.droid.wifiIsBridgedApConcurrencySupported(), "Phone %s doesn't support bridged AP." %  (self.dut.model))
         for ad in self.android_devices:
             wutils.reset_wifi(ad)
         wutils.wifi_toggle_state(self.dut, False)
@@ -501,8 +500,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
@@ -537,8 +535,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
@@ -572,8 +569,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
@@ -607,8 +603,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
@@ -649,8 +644,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
@@ -691,8 +685,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
@@ -734,8 +727,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
@@ -779,8 +771,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         self.sniffing_ap_channels(channel1=None, channel2=132)
         self.start_ap(channel_2g=None, channel_5g=132)
@@ -819,8 +810,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         self.sniffing_ap_channels(channel1=None, channel2=36)
         self.start_ap(channel_2g=None, channel_5g=36)
@@ -860,8 +850,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         self.sniffing_ap_channels(channel1=6, channel2=None)
         self.start_ap(channel_2g=6, channel_5g=None)
@@ -901,8 +890,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Simulate the unplugged scenario
         self.dut.adb.shell("cmd battery unplug")
@@ -953,8 +941,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Simulate the unplugged scenario
         self.dut.adb.shell("cmd battery unplug")
@@ -1029,8 +1016,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Simulate the unplugged scenario
         self.dut.adb.shell("cmd battery unplug")
@@ -1094,6 +1080,8 @@ class WifiBridgedApTest(WifiBaseTest):
             Verify only 2G BridgedAp instance is enabled.
             Restore config.
         """
+        asserts.skip_if(not self.dut.droid.wifiIsBridgedApConcurrencySupported(),
+                        "DUT %s doesn't support bridged AP." %  (self.dut.model))
         # Backup config
         original_softap_config = self.dut.droid.wifiGetApConfiguration()
 
@@ -1132,8 +1120,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Simulate the unplugged scenario
         self.dut.adb.shell("cmd battery unplug")
@@ -1178,8 +1165,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Simulate the unplugged scenario
         self.dut.adb.shell("cmd battery unplug")
@@ -1230,8 +1216,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Simulate the unplugged scenario
         self.dut.adb.shell("cmd battery unplug")
@@ -1282,8 +1267,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Simulate the unplugged scenario
         self.dut.adb.shell("cmd battery unplug")
@@ -1327,8 +1311,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Make sure DUT is able to enable BridgedAp.
         is_supported = wutils.check_available_channels_in_bands_2_5(
             self.dut, wutils.WifiEnums.CountryCode.US)
-        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
-                        .format(wutils.WifiEnums.CountryCode.US))
+        asserts.skip_if(not is_supported, "BridgedAp is not supported.")
 
         # Simulate the unplugged scenario
         self.dut.adb.shell("cmd battery unplug")
