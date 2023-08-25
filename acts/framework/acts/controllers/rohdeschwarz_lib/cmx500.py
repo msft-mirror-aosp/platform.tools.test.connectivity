@@ -673,6 +673,26 @@ class BaseStation(object):
             time.sleep(1)
         return self._cell.is_on()
 
+    def set_tracking_area(self, tac):
+        """Sets the cells tracking area.
+
+        Args:
+            tac: the tracking area ID to add the cell to.
+        """
+        plmn = self._network.get_or_create_plmn()
+        old_ta = next((t for t in (plmn.eps_ta_list + plmn.fivegs_ta_list)
+                       if self._cell in t.cells))
+        new_ta = next((t for t in (plmn.eps_ta_list + plmn.fivegs_ta_list)
+                       if t.tac == tac), None)
+        if not new_ta:
+            new_ta = self.create_new_ta(tac)
+
+        if old_ta == new_ta:
+            return
+
+        new_ta.add_cell(self._cell)
+        old_ta.remove_cell(self._cell)
+
 
 class LteBaseStation(BaseStation):
     """ LTE base station."""
@@ -1003,6 +1023,17 @@ class LteBaseStation(BaseStation):
         else:
             self._cell.stub.SetPuschCommonConfig(True)
 
+    def create_new_ta(self, tac):
+        """Creates and initializes a new tracking area for this cell.
+
+        Args:
+            tac: the tracking area ID of the new cell.
+        Returns:
+            ta: the new tracking area.
+        """
+        plmn = self._network.get_or_create_plmn()
+        return plmn.create_eps_ta(tac)
+
     def wait_for_attach(self, timeout):
         self._cmx.dut.signaling.wait_for_lte_attach(self._cell, timeout)
 
@@ -1287,6 +1318,16 @@ class NrBaseStation(BaseStation):
             raise CmxError('The modulation is not the type of Modulation')
         self._config_scheduler(ul_mcs_table=modulation.value)
 
+    def create_new_ta(self, tac):
+        """Creates and initializes a new tracking area for this cell.
+
+        Args:
+            tac: the tracking area ID of the new cell.
+        Returns:
+            ta: the new tracking area.
+        """
+        plmn = self._network.get_or_create_plmn()
+        return plmn.create_fivegs_ta(tac)
 
 class CmxError(Exception):
     """Class to raise exceptions related to cmx."""
