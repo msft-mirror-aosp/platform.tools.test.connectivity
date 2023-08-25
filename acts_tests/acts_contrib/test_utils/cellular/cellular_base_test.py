@@ -201,7 +201,7 @@ class CellularBaseTest(base_test.BaseTestClass):
                 if getattr(self, param) is None:
                     raise RuntimeError('The uxm cellular simulator '
                                        'requires %s to be set in the '
-                                       'config file.' % key)
+                                       'config file.' % param)
             return uxm.UXMCellularSimulator(self.uxm_ip, self.custom_files,
                                             self.uxm_user,
                                             self.ssh_private_key_to_uxm,

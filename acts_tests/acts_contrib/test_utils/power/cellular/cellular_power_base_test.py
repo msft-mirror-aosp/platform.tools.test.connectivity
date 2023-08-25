@@ -19,6 +19,7 @@ import os
 import acts_contrib.test_utils.power.PowerBaseTest as PBT
 import acts_contrib.test_utils.cellular.cellular_base_test as CBT
 from acts_contrib.test_utils.power import plot_utils
+from acts import context
 
 
 class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):

@@ -27,6 +27,12 @@ class PresetSimulation(BaseSimulation):
     KEY_CELL_INFO = "cell_info"
     KEY_SCPI_FILE_NAME = "scpi_file"
 
+    NETWORK_BIT_MASK = {
+        'nr_lte': '11000001000000000000'
+    }
+    ADB_CMD_LOCK_NETWORK = 'cmd phone set-allowed-network-types-for-users -s 0 {network_bit_mask}'
+    NR_LTE_BIT_MASK_KEY = 'nr_lte'
+
     def __init__(self,
                  simulator,
                  log,
@@ -47,6 +53,8 @@ class PresetSimulation(BaseSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table,
                          nr_mode)
+        # require param for idle test case
+        self.rrc_sc_timer = 0
 
         # Set to KeySight APN
         log.info('Configuring APN.')
@@ -55,15 +63,6 @@ class PresetSimulation(BaseSimulation):
 
         # Enable roaming on the phone
         self.dut.toggle_data_roaming(True)
-
-        # Force device to LTE only so that it connects faster
-        try:
-            self.dut.set_preferred_network_type(
-                BaseCellularDut.PreferredNetworkType.NR_LTE)
-        except Exception as e:
-            # If this fails the test should be able to run anyways, even if it
-            # takes longer to find the cell.
-            self.log.warning('Setting preferred RAT failed: ' + str(e))
 
     def setup_simulator(self):
         """Do initial configuration in the simulator. """
@@ -99,11 +98,7 @@ class PresetSimulation(BaseSimulation):
             RuntimeError: simulation fail to start
                 due to unable to connect dut and cells.
         """
-
-        try:
-            self.attach()
-        except Exception as exc:
-            raise RuntimeError('Simulation fail to start.') from exc
+        self.attach()
 
     def attach(self):
         """Attach UE to the callbox.
