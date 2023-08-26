@@ -318,7 +318,6 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         modem_logs.clear_modem_logging(self.cellular_dut.ad)
 
     def collect_power_data_and_validate(self):
-        time.sleep(120)
         cells_status_before = sorted(self.cellular_simulator.get_all_cell_status())
         self.log.info('UXM cell status before collect power: %s', cells_status_before)
 

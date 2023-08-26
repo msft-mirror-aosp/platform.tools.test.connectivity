@@ -71,9 +71,6 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
                       "wifi6_models",
                       "iperf_server_address"]
         self.unpack_userparams(req_param_names=req_params,)
-        asserts.abort_class_if(
-            self.dut.model not in self.dbs_supported_models,
-            "Device %s does not support dual interfaces." % self.dut.model)
 
         # Use local host as iperf server.
         if "IPerfServer" in self.user_params:
@@ -82,6 +79,10 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             self.iperf_server.start()
 
     def setup_test(self):
+        asserts.skip_if(
+            self.dut.model not in self.dbs_supported_models,
+            "Device %s does not support dual interfaces." % self.dut.model)
+
         super().setup_test()
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
