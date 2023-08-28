@@ -21,14 +21,13 @@ from typing import List
 
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.controllers.utils_lib.ssh import connection
 from acts import signals
+from acts.controllers.utils_lib.ssh import connection
 
 
 _POLL_AP_RETRY_INTERVAL_SEC = 1
-_WAIT_OPENWRT_AP_BOOT_SEC = 10
+_WAIT_OPENWRT_AP_BOOT_SEC = 30
 _NO_ATTENUATION = 0
-
 
 class WifiPreTest(WifiBaseTest):
   """ Wi-Fi PreTest."""
@@ -53,7 +52,7 @@ class WifiPreTest(WifiBaseTest):
 
     # Polling OpenWrt APs until they are ready.
     for i, openwrt in enumerate(self.access_points):
-      if self.poll_openwrt_over_ssh(openwrt.ssh_settings.hostname):
+      if self.poll_openwrt_over_ssh(openwrt):
         continue
       else:
         raise signals.TestFailure(
@@ -81,11 +80,8 @@ class WifiPreTest(WifiBaseTest):
     self.dut.droid.goToSleepNow()
     wutils.reset_wifi(self.dut)
 
-  def poll_openwrt_over_ssh(self, ip: str,
-                            port: int = 22,
-                            username: str = "root",
-                            password: str = "root",
-                            retry_duration: int=120):
+  def poll_openwrt_over_ssh(self,openwrt,
+                            retry_duration: int=60):
     """
     Attempt to establish an SSH connection with the device at the given IP address and port.
 
@@ -100,25 +96,19 @@ class WifiPreTest(WifiBaseTest):
     Returns:
       bool: True if the connection was successful, False otherwise.
     """
-
+    ip = openwrt.ssh_settings.hostname
     start_time = time.time()
     while time.time() - start_time < retry_duration:
       try:
-        logging.info(f"Attempt to connect to {ip}:{port}")
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(ip, port=port, username=username, password=password,
-                    timeout=retry_duration)
-        # Execute commands on the device.
-        _, stdout, _ = ssh.exec_command(
-          "ping -c 1 www.google.com")
-        logging.info(stdout.read().decode())
-        ssh.close()
-        logging.info(f"Connected to {ip}:{port}")
+        logging.info(f"Attempt to connect to {ip}")
+        openwrt.close()
+        openwrt.ssh = connection.SshConnection(openwrt.ssh_settings)
+        openwrt.ssh.setup_master_ssh()
         return True
       except (paramiko.ssh_exception.NoValidConnectionsError,
-                paramiko.ssh_exception.AuthenticationException,
-                paramiko.ssh_exception.SSHException, TimeoutError) as e:
+              paramiko.ssh_exception.AuthenticationException,
+              paramiko.ssh_exception.SSHException,
+              TimeoutError) as e:
         logging.info(f"Connection error: {e}, reconnecting {ip} "
                       f"in {retry_duration} seconds.")
         time.sleep(_POLL_AP_RETRY_INTERVAL_SEC)
