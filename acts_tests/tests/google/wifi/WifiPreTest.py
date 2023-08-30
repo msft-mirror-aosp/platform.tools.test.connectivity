@@ -19,6 +19,7 @@ import paramiko
 import time
 from typing import List
 
+from acts.test_decorators import test_tracker_info
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts import signals
@@ -141,6 +142,7 @@ class WifiPreTest(WifiBaseTest):
         band_bssid_map = openwrt.get_bssids_for_wifi_networks()
         openwrt.log.info(band_bssid_map)
 
+  @test_tracker_info(uuid="913605ea-38bf-492c-b634-d1823caed4b3")
   def test_connects_all_testbed_wifi_networks(self):
     """Test whether the DUT can successfully connect to restarted APs."""
     for network in self.open_networks:
