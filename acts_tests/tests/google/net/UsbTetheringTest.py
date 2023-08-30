@@ -8,7 +8,8 @@ from scapy.layers.dns import DNS, DNSQR
 from scapy.layers.inet import IP, ICMP, UDP, TCP, RandShort, sr1
 from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
 from scapy.config import conf
-from scapy.sendrecv import send
+from scapy.sendrecv import send, sendp, srp1
+from scapy.layers.l2 import Ether
 import time
 
 DUMSYS_CMD = "dumpsys connectivity tethering"
@@ -136,12 +137,15 @@ class UsbTetheringTest(base_test.BaseTestClass):
         resp and resp.haslayer(IPv6), "Failed to send TCP packet over IPv6, resp: " + resp_msg)
 
   def _send_http_get(self, destination, interface):
-    syn_ack = sr1(IP(dst=destination) / TCP(dport=80, flags="S"), timeout=2, iface=interface)
-    send(IP(dst=destination) / TCP(dport=80, sport=syn_ack[TCP].dport,seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='A'), iface=interface)
-    http_get_str = "GET / HTTP/1.1\r\nHost:" + destination + "\r\nAccept-Encoding: gzip, deflate\r\n\r\n"
-    req = IP(dst=destination)/TCP(dport=80, sport=syn_ack[TCP].dport, seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='P''A')/http_get_str
-    return sr1(req, timeout=2, iface=interface, retry = -3, filter = "tcp port 80")
-
+    try:
+        syn_ack = srp1(Ether() / IPv6(dst=destination) / TCP(dport=80, flags="S"), timeout=2, iface=interface)
+        sendp(Ether() / IPv6(dst=destination) / TCP(dport=80, sport=syn_ack[TCP].dport,seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='A'), iface=interface)
+        http_get_str = "GET / HTTP/1.1\r\nHost:" + destination + "\r\nAccept-Encoding: gzip, deflate\r\n\r\n"
+        req = Ether() / IPv6(dst=destination)/TCP(dport=80, sport=syn_ack[TCP].dport, seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='A')/http_get_str
+        return srp1(req, timeout=2, iface="enp0s20f0u1u1i1", retry = 3, filter = "tcp port 80")
+    except TypeError:
+        self.log.warn("Packet is sent but no answer from the server %s." % destination)
+        return None
 
   @test_tracker_info(uuid="96115afb-e0d3-40a8-8f04-b64cedc6588f")
   def test_http_connectivity(self):
