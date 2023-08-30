@@ -644,8 +644,12 @@ class OpenWrtAP(object):
     out = self.ssh.run(SYSTEM_INFO_CMD).stdout.split("\n")
     for line in out:
       if "board_name" in line:
-        model = (line.split()[1].strip("\",").split(","))
-        return "_".join(map(lambda i: i.upper(), model))
+        line = (line.split()[1].strip("\",").split(","))
+        board_name = "_".join(map(lambda i: i.upper(), line))
+        filter_list = "-"
+        for i in filter_list:
+          board_name = str(board_name.replace(i, "_"))
+        return board_name
     self.log.info("Failed to retrieve OpenWrt model information.")
     return None
 
