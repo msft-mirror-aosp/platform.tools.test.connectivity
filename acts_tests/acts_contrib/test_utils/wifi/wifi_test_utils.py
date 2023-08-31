@@ -2876,12 +2876,23 @@ def check_available_channels_in_bands_2_5(dut, country_code):
     """Check if DUT is capable of enable BridgedAp.
     #TODO: Find a way to make this function flexible by taking an argument.
 
+    Check points:
+        1. Check the DUT support by calling Android API.
+        2. Check the dual SAP bands support by changing DUT to the given country_code.
+
     Args:
         country_code: country code, e.g., 'US', 'JP'.
     Returns:
         True: If DUT is capable of enable BridgedAp.
         False: If DUT is not capable of enable BridgedAp.
     """
+    # Check point #1
+    is_bridged_ap_supported = dut.droid.wifiIsBridgedApConcurrencySupported()
+    if not is_bridged_ap_supported:
+        logging.error("DUT %s doesn't support bridged AP.", dut.model)
+        return False
+
+    # Check point #2
     set_wifi_country_code(dut, country_code)
     country = dut.droid.wifiGetCountryCode()
     dut.log.info("DUT current country code : {}".format(country))
@@ -2899,6 +2910,8 @@ def check_available_channels_in_bands_2_5(dut, country_code):
         capability[wifi_constants.
                    SOFTAP_CAPABILITY_5GHZ_SUPPORTED_CHANNEL_LIST]:
         return True
+
+    logging.error("DUT in %s doesn't support dual SAP bands (2G and 5G).", country_code)
     return False
 
 
