@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import itertools
+import logging
 import pprint
 import sys
 import time
@@ -26,6 +27,7 @@ import acts.utils as utils
 
 from acts import asserts
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.iperf_server import IPerfServer
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
@@ -77,10 +79,17 @@ class WifiSoftApAcsTest(WifiBaseTest):
         self.pcap_procs = None
 
         # Use local host as iperf server.
-        if "IPerfServer" in self.user_params:
-            self.iperf_server = self.iperf_servers[0]
-            wutils.kill_iperf3_server_by_port(self.iperf_server.port)
-            self.iperf_server.start()
+        asserts.assert_true(
+          wutils.get_host_public_ipv4_address(),
+          "The host has no public ip address")
+        self.iperf_server_address = wutils.get_host_public_ipv4_address()
+        self.iperf_server_port = wutils.get_iperf_server_port()
+        try:
+          self.iperf_server = IPerfServer(self.iperf_server_port)
+          self.iperf_server.start()
+          logging.info(f"IPerf server started on {self.iperf_server_port}")
+        except Exception as e:
+          raise signals.TestFailure("Failed to start iperf3 server: %s" % e)
 
     def setup_test(self):
         super().setup_test()
@@ -113,8 +122,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
         self.access_points[0].close()
 
     def teardown_class(self):
-        if "IPerfServer" in self.user_params:
-            self.iperf_server.stop()
+        self.iperf_server.stop()
 
     """Helper Functions"""
 
@@ -125,16 +133,15 @@ class WifiSoftApAcsTest(WifiBaseTest):
             params: A tuple of network info and AndroidDevice object.
 
         """
-        if "iperf_server_address" in self.user_params:
-            network, ad = params
-            SSID = network[WifiEnums.SSID_KEY]
-            self.log.info("Starting iperf traffic through {}".format(SSID))
-            port_arg = "-p {} -t {}".format(self.iperf_server.port, 3)
-            success, data = ad.run_iperf_client(self.iperf_server_address,
-                                                port_arg)
-            self.log.debug(pprint.pformat(data))
-            asserts.assert_true(success, "Error occurred in iPerf traffic.")
-            self.log.info("Finished iperf traffic through {}".format(SSID))
+        network, ad = params
+        SSID = network[WifiEnums.SSID_KEY]
+        self.log.info("Starting iperf traffic through {}".format(SSID))
+        port_arg = "-p {} -t {}".format(self.iperf_server_port, 3)
+        success, data = ad.run_iperf_client(self.iperf_server_address,
+                                            port_arg)
+        self.log.debug(pprint.pformat(data))
+        asserts.assert_true(success, "Error occurred in iPerf traffic.")
+        self.log.info("Finished iperf traffic through {}".format(SSID))
 
     def start_softap_and_verify(self, band):
         """Bring-up softap and verify AP mode and in scan results.
