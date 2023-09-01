@@ -57,7 +57,10 @@ class WifiBridgedApTest(WifiBaseTest):
             self.client1 = self.android_devices[1]
             self.client2 = self.android_devices[2]
         else:
-            raise signals.TestFailure("WifiBridgedApTest requires 3 DUTs")
+            raise signals.TestAbortClass("WifiBridgedApTest requires 3 DUTs")
+
+        if not self.dut.droid.wifiIsBridgedApConcurrencySupported():
+            raise signals.TestAbortClass("Legacy phone is not supported")
 
         req_params = ["dbs_supported_models"]
         opt_param = []
@@ -67,7 +70,6 @@ class WifiBridgedApTest(WifiBaseTest):
 
     def setup_test(self):
         super().setup_test()
-        asserts.skip_if(not self.dut.droid.wifiIsBridgedApConcurrencySupported(), "Phone %s doesn't support bridged AP." %  (self.dut.model))
         for ad in self.android_devices:
             wutils.reset_wifi(ad)
         wutils.wifi_toggle_state(self.dut, False)
