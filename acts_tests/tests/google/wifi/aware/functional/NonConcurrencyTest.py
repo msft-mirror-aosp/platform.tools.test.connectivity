@@ -192,7 +192,7 @@ class NonConcurrencyTest(AwareBaseTest):
         autils.wait_for_event(dut_ap, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
 
         # dut start subscribe
-        wutils.wait_for_disconnect(dut)
+        wutils.wait_for_disconnect(dut, timeout=20)
         if state_change:
             autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
             p_id = dut.droid.wifiAwareAttach()
