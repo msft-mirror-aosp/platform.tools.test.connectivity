@@ -57,10 +57,7 @@ class WifiBridgedApTest(WifiBaseTest):
             self.client1 = self.android_devices[1]
             self.client2 = self.android_devices[2]
         else:
-            raise signals.TestAbortClass("WifiBridgedApTest requires 3 DUTs")
-
-        if not self.dut.droid.wifiIsBridgedApConcurrencySupported():
-            raise signals.TestAbortClass("Legacy phone is not supported")
+            raise signals.TestFailure("WifiBridgedApTest requires 3 DUTs")
 
         req_params = ["dbs_supported_models"]
         opt_param = []
@@ -70,6 +67,7 @@ class WifiBridgedApTest(WifiBaseTest):
 
     def setup_test(self):
         super().setup_test()
+        asserts.skip_if(not self.dut.droid.wifiIsBridgedApConcurrencySupported(), "Phone %s doesn't support bridged AP." %  (self.dut.model))
         for ad in self.android_devices:
             wutils.reset_wifi(ad)
         wutils.wifi_toggle_state(self.dut, False)
@@ -78,8 +76,6 @@ class WifiBridgedApTest(WifiBaseTest):
 
     def teardown_test(self):
         super().teardown_test()
-        # Reset unplugged status
-        self.dut.adb.shell("cmd battery reset")
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
         for ad in self.android_devices:
@@ -906,8 +902,6 @@ class WifiBridgedApTest(WifiBaseTest):
         asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
                         .format(wutils.WifiEnums.CountryCode.US))
 
-        # Simulate the unplugged scenario
-        self.dut.adb.shell("cmd battery unplug")
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
@@ -958,8 +952,6 @@ class WifiBridgedApTest(WifiBaseTest):
         asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
                         .format(wutils.WifiEnums.CountryCode.US))
 
-        # Simulate the unplugged scenario
-        self.dut.adb.shell("cmd battery unplug")
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
@@ -1034,8 +1026,6 @@ class WifiBridgedApTest(WifiBaseTest):
         asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
                         .format(wutils.WifiEnums.CountryCode.US))
 
-        # Simulate the unplugged scenario
-        self.dut.adb.shell("cmd battery unplug")
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
@@ -1137,8 +1127,6 @@ class WifiBridgedApTest(WifiBaseTest):
         asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
                         .format(wutils.WifiEnums.CountryCode.US))
 
-        # Simulate the unplugged scenario
-        self.dut.adb.shell("cmd battery unplug")
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
@@ -1183,8 +1171,6 @@ class WifiBridgedApTest(WifiBaseTest):
         asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
                         .format(wutils.WifiEnums.CountryCode.US))
 
-        # Simulate the unplugged scenario
-        self.dut.adb.shell("cmd battery unplug")
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
@@ -1235,8 +1221,6 @@ class WifiBridgedApTest(WifiBaseTest):
         asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
                         .format(wutils.WifiEnums.CountryCode.US))
 
-        # Simulate the unplugged scenario
-        self.dut.adb.shell("cmd battery unplug")
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
@@ -1286,9 +1270,6 @@ class WifiBridgedApTest(WifiBaseTest):
             self.dut, wutils.WifiEnums.CountryCode.US)
         asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
                         .format(wutils.WifiEnums.CountryCode.US))
-
-        # Simulate the unplugged scenario
-        self.dut.adb.shell("cmd battery unplug")
         # Enable BridgedAp with "Extend compatibility set to ON".
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
@@ -1331,9 +1312,6 @@ class WifiBridgedApTest(WifiBaseTest):
             self.dut, wutils.WifiEnums.CountryCode.US)
         asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
                         .format(wutils.WifiEnums.CountryCode.US))
-
-        # Simulate the unplugged scenario
-        self.dut.adb.shell("cmd battery unplug")
         # Enable BridgedAp with "Extend compatibility set to ON".
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
