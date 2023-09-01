@@ -142,7 +142,7 @@ class UsbTetheringTest(base_test.BaseTestClass):
         sendp(Ether() / IPv6(dst=destination) / TCP(dport=80, sport=syn_ack[TCP].dport,seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='A'), iface=interface)
         http_get_str = "GET / HTTP/1.1\r\nHost:" + destination + "\r\nAccept-Encoding: gzip, deflate\r\n\r\n"
         req = Ether() / IPv6(dst=destination)/TCP(dport=80, sport=syn_ack[TCP].dport, seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='A')/http_get_str
-        return srp1(req, timeout=2, iface="enp0s20f0u1u1i1", retry = 3, filter = "tcp port 80")
+        return srp1(req, timeout=2, iface=interface, retry = 3, filter = "tcp port 80")
     except TypeError:
         self.log.warn("Packet is sent but no answer from the server %s." % destination)
         return None
