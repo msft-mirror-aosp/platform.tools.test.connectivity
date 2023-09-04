@@ -57,6 +57,8 @@ DEFAULT_SCAN_TRIES = 3
 DEFAULT_CONNECT_TRIES = 3
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
+# WiFi scan retry interval
+WIFI_SCAN_RETRY_INTERVAL_SEC = 5
 
 DEFAULT_PING_ADDR = "https://www.google.com/robots.txt"
 
@@ -936,13 +938,21 @@ def start_wifi_connection_scan_and_check_for_network(ad,
             match_results = match_networks({WifiEnums.SSID_KEY: network_ssid},
                                            scan_results)
             if found == (len(match_results) > 0):
-                if len(match_results) > 0:
-                    ad.log.debug("Found network in %s seconds." %
-                                 (time.time() - start_time))
-                else:
-                    ad.log.debug("Did not find network in %s seconds." %
-                                 (time.time() - start_time))
-                return True
+                if found:
+                    ad.log.debug("%s network found in %s seconds." %
+                                  (network_ssid, (time.time() - start_time)))
+                    return True
+                # if found == False, we loop over till max_tries to make sure the ssid is
+                # really no show.
+                elif not found and (num_tries + 1) == max_tries:
+                    ad.log.debug("%s network not found in %d tries in %s seconds." %
+                                 (network_ssid, max_tries, (time.time() - start_time)))
+                    return True
+        else:
+            if (num_tries + 1) == max_tries:
+                break
+            # wait for a while when a WiFi scan is failed, e.g. because of device busy.
+            time.sleep(WIFI_SCAN_RETRY_INTERVAL_SEC)
     return False
 
 
