@@ -1,6 +1,7 @@
 import logging
 import os
 import paramiko
+import scp
 import subprocess
 
 
@@ -81,19 +82,6 @@ class OpenWrtAuth:
       FileNotFoundError: If the public key file or the private key file does not exist.
       Exception: If an unexpected error occurs while sending the public key.
     """
-    try:
-      import scp
-      logging.info("scp package is already installed.")
-    except ImportError:
-      logging.info("scp package is not installed. Installing...")
-      try:
-        subprocess.check_call(['pip3', 'install', 'scp'])
-        logging.info("scp package installed successfully.")
-        # Import the 'scp' module after installation.
-        import scp
-      except subprocess.CalledProcessError:
-        logging.info("Error installing scp package.")
-
     try:
       # Connects to the remote host and uploads the public key.
       logging.info(f"Uploading public key to remote host {self.hostname}...")
