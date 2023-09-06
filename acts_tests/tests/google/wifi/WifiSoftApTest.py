@@ -248,8 +248,6 @@ class WifiSoftApTest(WifiBaseTest):
             utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_ip, timeout=20),
             "%s ping %s failed" % (self.dut_client.serial, dut_ip))
 
-        wutils.stop_wifi_tethering(self.dut)
-
     def validate_ping_between_two_clients(self, config):
         """Test ping between softap's clients.
 
