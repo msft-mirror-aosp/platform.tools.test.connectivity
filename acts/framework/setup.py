@@ -40,6 +40,7 @@ install_requires = [
     'requests',
     'retry',
     'scapy',
+    'scp',
     'usbinfo',
     'zeroconf'
 ]
