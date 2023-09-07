@@ -37,4 +37,4 @@ class OpenWrtWifiSetting:
 class OpenWrtModelMap:
   NETGEAR_R8000 = ("radio2", "radio1")
   TOTOLINK_X5000R = ("radio1", "radio0")
-  LINKSYS_E8450_UBI = ("radio0", "radio1")
+  LINKSYS_E8450_UBI = ("radio1", "radio0")
