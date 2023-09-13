@@ -56,8 +56,10 @@ class CellularFr1SensitivityTest(CellularFr1SingleCellPeakThroughputTest):
         plots = collections.OrderedDict()
         compiled_data = collections.OrderedDict()
         for testcase_name, testcase_data in self.testclass_results.items():
+            nr_cell_index = testcase_data['testcase_params'][
+                'endc_combo_config']['lte_cell_count']
             cell_config = testcase_data['testcase_params'][
-                'endc_combo_config']['cell_list'][1]
+                'endc_combo_config']['cell_list'][nr_cell_index]
             test_id = tuple(('band', cell_config['band']))
             if test_id not in plots:
                 # Initialize test id data when not present
@@ -134,15 +136,19 @@ class CellularFr1SensitivityTest(CellularFr1SingleCellPeakThroughputTest):
         bler_list = []
         average_throughput_list = []
         theoretical_throughput_list = []
+        nr_cell_index = testcase_data['testcase_params']['endc_combo_config'][
+            'lte_cell_count']
         cell_power_list = testcase_data['testcase_params']['cell_power_sweep'][
-            1]
+            nr_cell_index]
         for result in testcase_data['results']:
-            bler_list.append(
-                result['nr_bler_result']['total']['DL']['nack_ratio'])
+            bler_list.append(result['throughput_measurements']
+                             ['nr_bler_result']['total']['DL']['nack_ratio'])
             average_throughput_list.append(
-                result['nr_tput_result']['total']['DL']['average_tput'])
+                result['throughput_measurements']['nr_tput_result']['total']
+                ['DL']['average_tput'])
             theoretical_throughput_list.append(
-                result['nr_tput_result']['total']['DL']['theoretical_tput'])
+                result['throughput_measurements']['nr_tput_result']['total']
+                ['DL']['theoretical_tput'])
         padding_len = len(cell_power_list) - len(average_throughput_list)
         average_throughput_list.extend([0] * padding_len)
         theoretical_throughput_list.extend([0] * padding_len)
@@ -160,8 +166,8 @@ class CellularFr1SensitivityTest(CellularFr1SingleCellPeakThroughputTest):
         sensitivity = cell_power_list[sensitivity_idx]
         self.log.info('NR Band {} MCS {} Sensitivity = {}dBm'.format(
             testcase_data['testcase_params']['endc_combo_config']['cell_list']
-            [1]['band'], testcase_data['testcase_params']['nr_dl_mcs'],
-            sensitivity))
+            [nr_cell_index]['band'],
+            testcase_data['testcase_params']['nr_dl_mcs'], sensitivity))
 
         testcase_data['bler_list'] = bler_list
         testcase_data['average_throughput_list'] = average_throughput_list
@@ -172,13 +178,14 @@ class CellularFr1SensitivityTest(CellularFr1SingleCellPeakThroughputTest):
 
     def get_per_cell_power_sweeps(self, testcase_params):
         # get reference test
-        current_band = testcase_params['endc_combo_config']['cell_list'][1][
-            'band']
+        nr_cell_index = testcase_params['endc_combo_config']['lte_cell_count']
+        current_band = testcase_params['endc_combo_config']['cell_list'][
+            nr_cell_index]['band']
         reference_test = None
         reference_sensitivity = None
         for testcase_name, testcase_data in self.testclass_results.items():
             if testcase_data['testcase_params']['endc_combo_config'][
-                    'cell_list'][1]['band'] == current_band:
+                    'cell_list'][nr_cell_index]['band'] == current_band:
                 reference_test = testcase_name
                 reference_sensitivity = testcase_data['sensitivity']
         if reference_test and reference_sensitivity and not self.retry_flag:
@@ -199,7 +206,10 @@ class CellularFr1SensitivityTest(CellularFr1SingleCellPeakThroughputTest):
                          self.testclass_params['nr_cell_power_step']))
         lte_sweep = [self.testclass_params['lte_cell_power']
                      ] * len(nr_cell_sweep)
-        cell_power_sweeps = [lte_sweep, nr_cell_sweep]
+        if nr_cell_index == 0:
+            cell_power_sweeps = [nr_cell_sweep]
+        else:
+            cell_power_sweeps = [lte_sweep, nr_cell_sweep]
         return cell_power_sweeps
 
     def generate_test_cases(self, channel_list, dl_mcs_list, **kwargs):

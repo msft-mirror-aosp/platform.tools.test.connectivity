@@ -17,6 +17,7 @@
 import collections
 import logging
 import os
+import re
 import time
 
 PCC_PRESET_MAPPING = {
@@ -228,3 +229,23 @@ def log_system_power_metrics(ad, verbose=1):
             battery_meaurements['bat_{}'.format(par)] = ad.adb.shell(
                 'cat /sys/class/power_supply/maxfg/{}'.format(par))
         logging.debug('Battery readings: {}'.format(battery_meaurements))
+
+
+def send_at_command(ad, at_command):
+    at_cmd_output = ad.adb.shell('am instrument -w -e request {} -e response wait '
+                                 '"com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'.format(at_command))
+    return at_cmd_output
+
+def get_rx_measurements(ad, cell_type):
+    cell_type_int = 7 if cell_type == 'LTE' else 8
+    rx_meas = send_at_command(ad, 'AT+GOOGGETRXMEAS\={}?'.format(cell_type_int))
+    rsrp_regex = r"RSRP\[\d+\]\s+(-?\d+)"
+    rsrp_values = [float(x) for x in re.findall(rsrp_regex, rx_meas)]
+    rsrq_regex = r"RSRQ\[\d+\]\s+(-?\d+)"
+    rsrq_values = [float(x) for x in re.findall(rsrq_regex, rx_meas)]
+    rssi_regex = r"RSSI\[\d+\]\s+(-?\d+)"
+    rssi_values = [float(x) for x in re.findall(rssi_regex, rx_meas)]
+    sinr_regex = r"SINR\[\d+\]\s+(-?\d+)"
+    sinr_values = [float(x) for x in re.findall(sinr_regex, rx_meas)]
+    return {'rsrp': rsrp_values, 'rsrq': rsrq_values, 'rssi': rssi_values, 'sinr': sinr_values}
+
