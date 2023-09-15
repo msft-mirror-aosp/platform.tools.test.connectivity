@@ -26,19 +26,22 @@ class NrCellConfig(base_cell.BaseCellConfig):
         bandwidth: a integer indicating the required channel bandwidth
     """
 
-    PARAM_BAND = 'band'
-    PARAM_BW = 'bw'
-    PARAM_DL_MCS = 'dlmcs'
-    PARAM_DL_RBS = 'dl_rbs'
-    PARAM_PADDING = 'mac_padding'
-    PARAM_MIMO = 'mimo'
-    PARAM_NRARFCN = 'nr_arfcn'
+    PARAM_BAND = "band"
+    PARAM_BW = "bw"
+    PARAM_DL_MCS = "dlmcs"
+    PARAM_DL_RBS = "dl_rbs"
+    PARAM_PADDING = "mac_padding"
+    PARAM_MIMO = "mimo"
+    PARAM_NRARFCN = "nr_arfcn"
     PARAM_SCHEDULING = "scheduling"
     PARAM_SCHEDULING_DYNAMIC = "dynamic"
     PARAM_SCHEDULING_STATIC = "static"
-    PARAM_UL_MCS = 'ulmcs'
-    PARAM_UL_RBS = 'ul_rbs'
+    PARAM_UL_MCS = "ulmcs"
+    PARAM_UL_RBS = "ul_rbs"
     PARAM_TA = "tracking_area"
+    PARAM_DRX = "drx"
+    PARAM_DISABLE_ALL_UL_SLOTS = "disable_all_ul_slots"
+    PARAM_CONFIG_FLEXIBLE_SLOTS = "config_flexible_slots"
 
     def __init__(self, log):
         """ Initialize the base station config by setting all its
@@ -56,6 +59,9 @@ class NrCellConfig(base_cell.BaseCellConfig):
         self.mac_padding = None
         self.mimo_mode = None
         self.nr_arfcn = None
+        self.drx_connected_mode = None
+        self.disable_all_ul_slots = None
+        self.config_flexible_slots = None
 
     def configure(self, parameters):
         """ Configures an NR cell using a dictionary of parameters.
@@ -128,6 +134,8 @@ class NrCellConfig(base_cell.BaseCellConfig):
                     "The '{}' parameter was not set. Enabling MAC padding by "
                     "default.".format(self.PARAM_PADDING))
                 self.mac_padding = True
+            else:
+                self.mac_padding = parameters[self.PARAM_PADDING]
 
             if self.PARAM_DL_MCS in parameters:
                 self.dl_mcs = int(parameters[self.PARAM_DL_MCS])
@@ -138,6 +146,11 @@ class NrCellConfig(base_cell.BaseCellConfig):
             # Temproraily setting: set 273 for bandwidth of 100 MHz
             self.dl_rbs = 273
             self.ul_rbs = 273
+
+        self.disable_all_ul_slots = parameters.get(
+            self.PARAM_DISABLE_ALL_UL_SLOTS, False)
+        self.config_flexible_slots = parameters.get(
+            self.PARAM_CONFIG_FLEXIBLE_SLOTS, False)
 
     def __str__(self):
         return str(vars(self))
