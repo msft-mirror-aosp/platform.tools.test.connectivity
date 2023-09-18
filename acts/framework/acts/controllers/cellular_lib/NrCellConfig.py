@@ -38,6 +38,7 @@ class NrCellConfig(base_cell.BaseCellConfig):
     PARAM_SCHEDULING_STATIC = "static"
     PARAM_UL_MCS = 'ulmcs'
     PARAM_UL_RBS = 'ul_rbs'
+    PARAM_TA = "tracking_area"
 
     def __init__(self, log):
         """ Initialize the base station config by setting all its
@@ -85,6 +86,11 @@ class NrCellConfig(base_cell.BaseCellConfig):
             bw = 1.4
 
         self.bandwidth = bw
+
+        if self.PARAM_TA in parameters:
+            self.tracking_area = int(parameters[self.PARAM_TA])
+        else:
+            self.tracking_area = None
 
         # Setup mimo mode
         if self.PARAM_MIMO not in parameters:

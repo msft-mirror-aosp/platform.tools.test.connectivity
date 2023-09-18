@@ -342,6 +342,14 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.log.warning('The set_phich_resource method is not implememted, '
                          'use default value')
 
+    def set_tracking_area(self, bts_index, tac):
+        """ Assigns the cell to a specific tracking area.
+
+        Args:
+            tac: the unique tac to assign the cell to.
+        """
+        self.bts[bts_index].set_tracking_area(tac)
+
     def lte_attach_secondary_carriers(self, ue_capability_enquiry):
         """ Activates the secondary carriers for CA. Requires the DUT to be
         attached to the primary carrier first.
@@ -412,6 +420,11 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
                 CellularSimulatorError exception. Default is 120 seconds.
         """
         self.log.info('wait until attached')
+        if len(self.cmx.tracking_areas) > 1:
+            self.log.info('turning off neighbor cells')
+            self.cmx.turn_on_primary_cells()
+            self.cmx.turn_off_neighbor_cells()
+
         self.cmx.wait_until_attached(timeout)
 
     def wait_until_communication_state(self, timeout=120):
