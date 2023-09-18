@@ -80,6 +80,7 @@ class LteCellConfig(base_cell.BaseCellConfig):
     PARAM_DL_256_QAM_ENABLED = "256_qam_dl_enabled"
     PARAM_UL_64_QAM_ENABLED = "64_qam_ul_enabled"
     PARAM_DL_EARFCN = 'dl_earfcn'
+    PARAM_TA = "tracking_area"
 
     def __init__(self, log):
         """ Initialize the base station config by setting all its
@@ -376,6 +377,11 @@ class LteCellConfig(base_cell.BaseCellConfig):
                 raise ValueError(
                     'The {} key has to be followed by the paging cycle '
                     'duration in milliseconds.'.format(self.PARAM_PAGING))
+
+        if self.PARAM_TA in parameters:
+            self.tracking_area = int(parameters[self.PARAM_TA])
+        else:
+            self.tracking_area = None
 
     def get_duplex_mode(self):
         """ Determines if the cell uses FDD or TDD duplex mode

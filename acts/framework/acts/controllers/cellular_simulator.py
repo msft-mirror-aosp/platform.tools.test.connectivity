@@ -91,6 +91,9 @@ class AbstractCellularSimulator:
             config: an LteSimulation.BtsConfig object.
             bts_index: the base station number.
         """
+        if config.tracking_area:
+            self.set_tracking_area(bts_index, config.tracking_area)
+
         if config.band:
             self.set_band(bts_index, config.band)
 
@@ -179,6 +182,9 @@ class AbstractCellularSimulator:
             config: an LteSimulation.BtsConfig object.
             bts_index: the base station number.
         """
+        if config.tracking_area:
+            self.set_tracking_area(bts_index, config.tracking_area)
+
         if config.band:
             self.set_band(bts_index, config.band)
 
@@ -425,6 +431,14 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             offset: Number in range 0 to (long cycle - 1)
+        """
+        raise NotImplementedError()
+
+    def set_tracking_area(self, bts_index, tac):
+        """ Assigns the cell to a specific tracking area.
+
+        Args:
+            tac: the unique tac to assign the cell to.
         """
         raise NotImplementedError()
 
