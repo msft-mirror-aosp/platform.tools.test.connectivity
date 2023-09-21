@@ -309,9 +309,9 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         # toggle on/off APM for all devices
         self.log.info('Toggle APM on/off for all devices.')
         for ad in self.android_devices:
-            telutils.toggle_airplane_mode(self.log, ad, False)
+            telutils.toggle_airplane_mode_by_adb(self.log, ad, False)
             time.sleep(2)
-            telutils.toggle_airplane_mode(self.log, ad, True)
+            telutils.toggle_airplane_mode_by_adb(self.log, ad, True)
             time.sleep(2)
 
         # clear modem logs
