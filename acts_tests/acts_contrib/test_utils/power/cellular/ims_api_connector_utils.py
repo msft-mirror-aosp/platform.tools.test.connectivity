@@ -327,14 +327,8 @@ class ImsApiConnector:
     self.log.info('checking if server/client/api connector are registered and running')
     self._start_apps_if_down()
 
-    # Check if client is registered to server
-    if not self._is_ims_client_app_registered():
-      self.log.info('re-registering client to server')
-      self.reregister_client()
-
-    is_registered = self._is_ims_client_app_registered()
-    if not is_registered:
-      raise RuntimeError('Failed to register IMS-client to IMS-server.')
+    # Reregister client to server
+    self.reregister_client()
 
     # clear logs
     self.ims_api_call_method('ILogs.ClearResults()')

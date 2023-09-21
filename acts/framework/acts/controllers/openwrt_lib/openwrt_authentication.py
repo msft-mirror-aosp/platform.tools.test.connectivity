@@ -1,6 +1,8 @@
 import logging
 import os
 import paramiko
+import scp
+import subprocess
 
 
 _REMOTE_PATH = '/etc/dropbear/authorized_keys'
@@ -56,11 +58,12 @@ class OpenWrtAuth:
       os.makedirs('/tmp/openwrt/', exist_ok=True)
 
       # Saves the private key to a file.
-      self.private_key_file = '/tmp/openwrt/id_rsa'
+      self.private_key_file = '/tmp/openwrt/id_rsa_%s' % (self.hostname)
       key.write_private_key_file(self.private_key_file)
+      logging.info(f"Saved private key to file: {self.private_key_file}")
 
       # Saves the public key to a file.
-      self.public_key_file = '/tmp/openwrt/id_rsa.pub'
+      self.public_key_file = '/tmp/openwrt/id_rsa_%s.pub' % (self.hostname)
       with open(self.public_key_file, "w") as f:
           f.write(self.public_key)
       logging.info(f"Saved public key to file: {self.public_key_file}")
@@ -87,12 +90,14 @@ class OpenWrtAuth:
         ssh.connect(hostname=self.hostname,
                     port=self.port,
                     username=self.username,
-                    password=self.password,
-                    key_filename='/tmp/openwrt/id_rsa')
-        with ssh.open_sftp() as sftp:
-          sftp.put(self.public_key_file, _REMOTE_PATH)
+                    password=self.password)
+        scp_client = scp.SCPClient(ssh.get_transport())
+        scp_client.put(self.public_key_file, _REMOTE_PATH)
       logging.info('Public key uploaded successfully.')
-    except (paramiko.AuthenticationException, paramiko.SSHException, FileNotFoundError) as e:
+    except (paramiko.AuthenticationException,
+            paramiko.SSHException,
+            FileNotFoundError) as e:
       logging.error(f"An error occurred while sending the public key: {e}")
     except Exception as e:
-      logging.error(f"An unexpected error occurred while sending the public key: {e}")
+      logging.error(f"An unexpected error occurred while "
+                    f"sending the public key: {e}")

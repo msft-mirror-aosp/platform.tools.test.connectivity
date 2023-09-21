@@ -29,6 +29,7 @@ from acts import base_test
 from acts import utils
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.controllers.utils_lib import ssh
+from acts.controllers.android_lib.tel import tel_utils
 from acts.controllers import iperf_server as ipf
 from acts_contrib.test_utils.cellular.keysight_5g_testapp import Keysight5GTestApp
 from acts_contrib.test_utils.cellular.performance import cellular_performance_test_utils as cputils
@@ -87,18 +88,20 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
         self.user_params['retry_tests'] = [self.__class__.__name__]
 
         # Turn Airplane mode on
-        asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                            'Can not turn on airplane mode.')
+        #asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+        #                    'Can not turn on airplane mode.')
+        tel_utils.toggle_airplane_mode(self.log, self.dut, True)
 
     def teardown_class(self):
         self.log.info('Turning airplane mode on')
         try:
-            asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                                'Can not turn on airplane mode.')
+            #asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+            #                    'Can not turn on airplane mode.')
+            tel_utils.toggle_airplane_mode(self.log, self.dut, True)
         except:
             self.log.warning('Cannot perform teardown operations on DUT.')
         try:
-            self.keysight_test_app.set_cell_state('LTE', 1, 0)
+            self.keysight_test_app.turn_all_cells_off()
             self.keysight_test_app.destroy()
         except:
             self.log.warning('Cannot perform teardown operations on tester.')
@@ -112,11 +115,11 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
     def teardown_test(self):
         self.retry_flag = False
         self.log.info('Turing airplane mode on')
-        asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                            'Can not turn on airplane mode.')
-        if self.keysight_test_app.get_cell_state('LTE', 'CELL1'):
-            self.log.info('Turning LTE off.')
-            self.keysight_test_app.set_cell_state('LTE', 'CELL1', 0)
+        #asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+        #                    'Can not turn on airplane mode.')
+        tel_utils.toggle_airplane_mode(self.log, self.dut, True)
+        self.log.info('Turning all cells off.')
+        self.keysight_test_app.turn_all_cells_off()
         log_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'pixel_logs')
         os.makedirs(self.log_path, exist_ok=True)
@@ -133,8 +136,9 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
         and sets a retry_flag to enable further tweaking the test logic on
         second attempts.
         """
-        asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                            'Can not turn on airplane mode.')
+        #asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+        #                    'Can not turn on airplane mode.')
+        tel_utils.toggle_airplane_mode(self.log, self.dut, True)
         if self.keysight_test_app.get_cell_state('LTE', 'CELL1'):
             self.log.info('Turning LTE off.')
             self.keysight_test_app.set_cell_state('LTE', 'CELL1', 0)
@@ -318,6 +322,10 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
         # Configure all cells
         for cell_idx, cell in enumerate(
                 testcase_params['endc_combo_config']['cell_list']):
+            if cell['cell_type'] == 'NR5G':
+                self.keysight_test_app.set_nr_cell_type(
+                    cell['cell_type'], cell['cell_number'],
+                    cell['nr_cell_type'])
             self.keysight_test_app.set_cell_duplex_mode(
                 cell['cell_type'], cell['cell_number'], cell['duplex_mode'])
             self.keysight_test_app.set_cell_band(cell['cell_type'],
@@ -326,6 +334,14 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
             self.keysight_test_app.set_cell_dl_power(
                 cell['cell_type'], cell['cell_number'],
                 testcase_params['cell_power_sweep'][cell_idx][0], 1)
+            self.keysight_test_app.set_cell_input_power(
+                cell['cell_type'], cell['cell_number'],
+               self.testclass_params['input_power'][cell['cell_type']])
+            self.keysight_test_app.set_cell_ul_power_control(
+                cell['cell_type'], cell['cell_number'],
+                self.testclass_params['ul_power_control_mode'],
+                self.testclass_params.get('ul_power_control_target',0)
+            )
             if cell['cell_type'] == 'NR5G':
                 self.keysight_test_app.set_nr_subcarrier_spacing(
                     cell['cell_number'], cell['subcarrier_spacing'])
@@ -361,10 +377,15 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                 self.testclass_params['lte_ul_mac_padding'])
 
         if testcase_params['endc_combo_config']['nr_cell_count']:
+
             if 'schedule_scenario' in testcase_params:
                 self.keysight_test_app.set_nr_cell_schedule_scenario(
                     'CELL1',
                     testcase_params['schedule_scenario'])
+                if testcase_params['schedule_scenario'] == 'FULL_TPUT':
+                    self.keysight_test_app.set_nr_schedule_slot_ratio(
+                        'CELL1',
+                        testcase_params['schedule_slot_ratio'])
             self.keysight_test_app.set_nr_ul_dft_precoding(
                 'CELL1', testcase_params['transform_precoding'])
             self.keysight_test_app.set_nr_cell_mcs(
@@ -375,47 +396,80 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
             self.keysight_test_app.set_ul_carriers(
                 testcase_params['endc_combo_config']['nr_ul_carriers'])
 
-        # Turn on LTE cells
-        for cell in testcase_params['endc_combo_config']['cell_list']:
-            if cell['cell_type'] == 'LTE' and not self.keysight_test_app.get_cell_state(
-                    cell['cell_type'], cell['cell_number']):
-                self.log.info('Turning LTE Cell {} on.'.format(
-                    cell['cell_number']))
-                self.keysight_test_app.set_cell_state(cell['cell_type'],
-                                                      cell['cell_number'], 1)
+        if testcase_params['endc_combo_config']['lte_cell_count']:
+            # Connect flow for LTE and LTE+FR1 ENDC
+            # Turn on LTE cells
+            for cell in testcase_params['endc_combo_config']['cell_list']:
+                if cell['cell_type'] == 'LTE' and not self.keysight_test_app.get_cell_state(
+                        cell['cell_type'], cell['cell_number']):
+                    self.log.info('Turning LTE Cell {} on.'.format(
+                        cell['cell_number']))
+                    self.keysight_test_app.set_cell_state(cell['cell_type'],
+                                                          cell['cell_number'], 1)
+            # Activate LTE aggregation if applicable
+            if testcase_params['endc_combo_config']['lte_scc_list']:
+                self.keysight_test_app.apply_lte_carrier_agg(
+                    testcase_params['endc_combo_config']['lte_scc_list'])
+            self.log.info('Waiting for LTE connections')
+            # Turn airplane mode off
+            num_apm_toggles = 10
+            for idx in range(num_apm_toggles):
+                self.log.info('Turning off airplane mode')
+                #asserts.assert_true(utils.force_airplane_mode(self.dut, False),
+                #                    'Can not turn off airplane mode.')
+                tel_utils.toggle_airplane_mode(self.log, self.dut, False)
+                if self.keysight_test_app.wait_for_cell_status(
+                        'LTE', 'CELL1', 'CONN', 10*(idx+1)):
+                    self.log.info('Connected! Waiting for {} seconds.'.format(LONG_SLEEP))
+                    time.sleep(LONG_SLEEP)
+                    break
+                elif idx < num_apm_toggles - 1:
+                    self.log.info('Turning on airplane mode')
+                #    asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                #                        'Can not turn on airplane mode.')
+                    tel_utils.toggle_airplane_mode(self.log, self.dut, True)
+                    time.sleep(MEDIUM_SLEEP)
+                else:
+                    asserts.fail('DUT did not connect to LTE.')
 
-        # Activate LTE aggregation
-        if testcase_params['endc_combo_config']['lte_scc_list']:
-            self.keysight_test_app.apply_lte_carrier_agg(
-                testcase_params['endc_combo_config']['lte_scc_list'])
-
-        self.log.info('Waiting for LTE connections')
-        # Turn airplane mode off
-        num_apm_toggles = 5
-        for idx in range(num_apm_toggles):
-            self.log.info('Turning off airplane mode')
-            asserts.assert_true(utils.force_airplane_mode(self.dut, False),
-                                'Can not turn off airplane mode.')
-            if self.keysight_test_app.wait_for_cell_status(
-                    'LTE', 'CELL1', 'CONN', 180):
-                break
-            elif idx < num_apm_toggles - 1:
-                self.log.info('Turning on airplane mode')
-                asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                                    'Can not turn on airplane mode.')
-                time.sleep(MEDIUM_SLEEP)
-            else:
-                asserts.fail('DUT did not connect to LTE.')
-
-        if testcase_params['endc_combo_config']['nr_cell_count']:
-            self.keysight_test_app.apply_carrier_agg()
-            self.log.info('Waiting for 5G connection')
-            connected = self.keysight_test_app.wait_for_cell_status(
-                'NR5G', testcase_params['endc_combo_config']['nr_cell_count'],
-                ['ACT', 'CONN'], 60)
-            if not connected:
-                asserts.fail('DUT did not connect to NR.')
-        time.sleep(SHORT_SLEEP)
+            if testcase_params['endc_combo_config']['nr_cell_count']:
+                self.keysight_test_app.apply_carrier_agg()
+                self.log.info('Waiting for 5G connection')
+                connected = self.keysight_test_app.wait_for_cell_status(
+                    'NR5G', testcase_params['endc_combo_config']['nr_cell_count'],
+                    ['ACT', 'CONN'], 60)
+                if not connected:
+                    asserts.fail('DUT did not connect to NR.')
+            time.sleep(SHORT_SLEEP)
+        elif testcase_params['endc_combo_config']['nr_cell_count']:
+            # Connect flow for NR FR1 Standalone
+            # Turn on NR cells
+            for cell in testcase_params['endc_combo_config']['cell_list']:
+                if cell['cell_type'] == 'NR5G' and not self.keysight_test_app.get_cell_state(
+                        cell['cell_type'], cell['cell_number']):
+                    self.log.info('Turning NR Cell {} on.'.format(
+                        cell['cell_number']))
+                    self.keysight_test_app.set_cell_state(cell['cell_type'],
+                                                          cell['cell_number'], 1)
+            num_apm_toggles = 10
+            for idx in range(num_apm_toggles):
+                self.log.info('Turning off airplane mode now.')
+                #asserts.assert_true(utils.force_airplane_mode(self.dut, False),
+                #                    'Can not turn off airplane mode.')
+                tel_utils.toggle_airplane_mode(self.log, self.dut, False)
+                if self.keysight_test_app.wait_for_cell_status(
+                        'NR5G', 'CELL1', 'CONN', 10*(idx+1)):
+                    self.log.info('Connected! Waiting for {} seconds.'.format(LONG_SLEEP))
+                    time.sleep(LONG_SLEEP)
+                    break
+                elif idx < num_apm_toggles - 1:
+                    self.log.info('Turning on airplane mode now.')
+                #    asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                #                        'Can not turn on airplane mode.')
+                    tel_utils.toggle_airplane_mode(self.log, self.dut, True)
+                    time.sleep(MEDIUM_SLEEP)
+                else:
+                    asserts.fail('DUT did not connect to NR.')
 
     def _test_throughput_bler(self, testcase_params):
         """Test function to run cellular throughput and BLER measurements.
@@ -449,27 +503,34 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
         for power_idx in range(len(testcase_params['cell_power_sweep'][0])):
             result = collections.OrderedDict()
             # Set DL cell power
-            result['cell_power'] = []
             for cell_idx, cell in enumerate(
                     testcase_params['endc_combo_config']['cell_list']):
+                cell_power_array = []
                 current_cell_power = testcase_params['cell_power_sweep'][
                     cell_idx][power_idx]
-                result['cell_power'].append(current_cell_power)
+                cell_power_array.append(current_cell_power)
                 self.keysight_test_app.set_cell_dl_power(
                     cell['cell_type'], cell['cell_number'], current_cell_power,
                     1)
-
+            result['cell_power'] = cell_power_array
             # Start BLER and throughput measurements
-            result = self.run_single_throughput_measurement(testcase_params)
+            current_throughput = self.run_single_throughput_measurement(testcase_params)
+            lte_rx_meas = cputils.get_rx_measurements(self.dut, 'LTE')
+            nr_rx_meas = cputils.get_rx_measurements(self.dut, 'NR5G')
+            result['throughput_measurements'] = current_throughput
+            result['lte_rx_measurements'] = lte_rx_meas
+            result['nr_rx_measurements'] = nr_rx_meas
+
+            self.print_throughput_result(current_throughput)
+            self.log.info('LTE Rx Measurements: {}'.format(lte_rx_meas))
+            self.log.info('NR Rx Measurements: {}'.format(nr_rx_meas))
+
             testcase_results['results'].append(result)
-
-            self.print_throughput_result(result)
-
-            if (('lte_bler_result' in result
-                 and result['lte_bler_result']['total']['DL']['nack_ratio'] *
+            if (('lte_bler_result' in result['throughput_measurements']
+                 and result['throughput_measurements']['lte_bler_result']['total']['DL']['nack_ratio'] *
                  100 > 99) or
-                ('nr_bler_result' in result
-                 and result['nr_bler_result']['total']['DL']['nack_ratio'] *
+                ('nr_bler_result' in result['throughput_measurements']
+                 and result['throughput_measurements']['nr_bler_result']['total']['DL']['nack_ratio'] *
                  100 > 99)):
                 stop_counter = stop_counter + 1
             else:

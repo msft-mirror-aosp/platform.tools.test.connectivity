@@ -309,16 +309,15 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         # toggle on/off APM for all devices
         self.log.info('Toggle APM on/off for all devices.')
         for ad in self.android_devices:
-            telutils.toggle_airplane_mode(self.log, ad, False)
+            telutils.toggle_airplane_mode_by_adb(self.log, ad, False)
             time.sleep(2)
-            telutils.toggle_airplane_mode(self.log, ad, True)
+            telutils.toggle_airplane_mode_by_adb(self.log, ad, True)
             time.sleep(2)
 
         # clear modem logs
         modem_logs.clear_modem_logging(self.cellular_dut.ad)
 
     def collect_power_data_and_validate(self):
-        time.sleep(120)
         cells_status_before = sorted(self.cellular_simulator.get_all_cell_status())
         self.log.info('UXM cell status before collect power: %s', cells_status_before)
 

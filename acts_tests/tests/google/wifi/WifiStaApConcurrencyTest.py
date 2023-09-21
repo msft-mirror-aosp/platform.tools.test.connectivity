@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import pprint
 import time
 import re
@@ -23,6 +24,7 @@ from acts import base_test
 from acts.controllers.ap_lib import hostapd_constants
 import acts.signals as signals
 from acts.test_decorators import test_tracker_info
+from acts.controllers.iperf_server import IPerfServer
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
@@ -68,20 +70,27 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             ad.droid.wifiEnableVerboseLogging(1)
 
         req_params = ["dbs_supported_models",
-                      "wifi6_models",
-                      "iperf_server_address"]
+                      "wifi6_models"]
         self.unpack_userparams(req_param_names=req_params,)
-        asserts.abort_class_if(
+
+        # Use local host as iperf server.
+        asserts.assert_true(
+          wutils.get_host_public_ipv4_address(),
+          "The host has no public ip address")
+        self.iperf_server_address = wutils.get_host_public_ipv4_address()
+        self.iperf_server_port = wutils.get_iperf_server_port()
+        try:
+          self.iperf_server = IPerfServer(self.iperf_server_port)
+          self.iperf_server.start()
+          logging.info(f"IPerf server started on {self.iperf_server_port}")
+        except Exception as e:
+          raise signals.TestFailure("Failed to start iperf3 server: %s" % e)
+
+    def setup_test(self):
+        asserts.skip_if(
             self.dut.model not in self.dbs_supported_models,
             "Device %s does not support dual interfaces." % self.dut.model)
 
-        # Use local host as iperf server.
-        if "IPerfServer" in self.user_params:
-            self.iperf_server = self.iperf_servers[0]
-            wutils.kill_iperf3_server_by_port(self.iperf_server.port)
-            self.iperf_server.start()
-
-    def setup_test(self):
         super().setup_test()
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
@@ -111,8 +120,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
                               "'open_network' to delete")
 
     def teardown_class(self):
-        if "IPerfServer" in self.user_params:
-            self.iperf_server.stop()
+        self.iperf_server.stop()
 
     ### Helper Functions ###
 
@@ -166,9 +174,9 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             ssid = network[WifiEnums.SSID_KEY]
             ad.log.info("Starting iperf traffic through {} to {} port:{}".
                 format(ssid, self.iperf_server_address,
-                       self.iperf_server.port))
+                       self.iperf_server_port))
             time.sleep(wait_time)
-            port_arg = "-p {}".format(self.iperf_server.port)
+            port_arg = "-p {}".format(self.iperf_server_port)
             success, data = ad.run_iperf_client(self.iperf_server_address,
                                                 port_arg)
             self.log.debug(pprint.pformat(data))
@@ -237,7 +245,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
                                     "up and running and the Port {} is "
                                     "listening for requests."
                                     .format(self.iperf_server_address,
-                                            self.iperf_server.port))
+                                            self.iperf_server_port))
 
         if len(self.android_devices) > 2:
             self.log.info("Testbed has extra devices, do more validation")
