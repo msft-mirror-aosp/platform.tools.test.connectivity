@@ -49,7 +49,9 @@ class WifiEnterpriseTest(WifiBaseTest):
             "eap_password", "invalid_ca_cert", "invalid_client_cert",
             "invalid_client_key", "device_password", "radius_conf_2g",
             "radius_conf_5g", "radius_conf_pwd", "wifi6_models")
+        opt_param_names = ["domain_suffix_match"]
         self.unpack_userparams(required_userparam_names,
+                               opt_param_names,
                                roaming_consortium_ids=None,
                                plmn=None,
                                ocsp=0)
@@ -91,6 +93,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_network_5g[WifiEnums.SSID_KEY],
             Ent.OCSP: self.ocsp,
+            Ent.DOM_SUFFIX_MATCH: self.domain_suffix_match,
         }
         self.config_peap1 = dict(self.config_peap0)
         self.config_peap1[WifiEnums.SSID_KEY] = \
@@ -103,6 +106,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.PRIVATE_KEY_ID: self.client_key,
             Ent.IDENTITY: self.eap_identity,
             Ent.OCSP: self.ocsp,
+            Ent.DOM_SUFFIX_MATCH: self.domain_suffix_match,
         }
         self.config_ttls = {
             Ent.EAP: int(EAP.TTLS),
@@ -112,6 +116,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
             Ent.OCSP: self.ocsp,
+            Ent.DOM_SUFFIX_MATCH: self.domain_suffix_match,
         }
         self.config_pwd = {
             Ent.EAP: int(EAP.PWD),
