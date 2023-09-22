@@ -200,7 +200,7 @@ class DataUsageTest(base_test.BaseTestClass):
         Returns:
             Data usage in MB
         """
-       if conn_type == cconst.TYPE_WIFI:
+        if conn_type == cconst.TYPE_WIFI:
             subscriber_id = None
         else:
             subscriber_id = ad.droid.telephonyGetSubscriberId()
