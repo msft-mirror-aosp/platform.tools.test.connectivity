@@ -28,7 +28,7 @@ BROWSER_WAIT_EXTRA_LONG = 60
 
 
 class NetgearRS700AP(WifiRetailAP):
-    """Class that implements Netgear RAXE500 AP.
+    """Class that implements Netgear RS700 AP.
 
     Since most of the class' implementation is shared with the R7000, this
     class inherits from NetgearR7000AP and simply redefines config parameters
