@@ -89,7 +89,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
     def setup_test(self):
         asserts.skip_if(
             self.dut.model not in self.dbs_supported_models,
-            "Device %s does not support dual interfaces." % self.dut.model)
+            "Device %s does not support dual interfaces" % self.dut.model)
 
         super().setup_test()
         for ad in self.android_devices:
