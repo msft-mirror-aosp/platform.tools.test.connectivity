@@ -166,7 +166,7 @@ class NetgearRS700AP(WifiRetailAP):
         setting_to_update = {network: {}}
         if channel:
             if channel not in self.capabilities['channels'][network]:
-                self.log.error('Ch{} is not supported on {} interface.'.format(
+                raise RuntimeError('Ch{} is not supported on {} interface.'.format(
                     channel, network))
             if isinstance(channel, str) and '6g' in channel:
                 channel = int(channel[2:])
@@ -179,7 +179,7 @@ class NetgearRS700AP(WifiRetailAP):
             bandwidth = bandwidth.replace('bw',
                                           self.capabilities['default_mode'])
         if bandwidth not in self.capabilities['modes'][network]:
-            self.log.error('{} mode is not supported on {} interface.'.format(
+            raise RuntimeError('{} mode is not supported on {} interface.'.format(
                 bandwidth, network))
         setting_to_update[network]['bandwidth'] = str(bandwidth)
         return setting_to_update
