@@ -868,27 +868,10 @@ class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
         self.tests = self.generate_test_cases(
             ap_power='standard',
             channels=[6, 36, 149, '6g37', '6g117', '6g213'],
-            modes=['bw20'],
+            modes=['bw20', 'bw80', 'bw160'],
             chain_masks=['2x2'],
             chamber_mode='orientation',
             positions=list(range(0, 360, 10)),
-            reference_params=['channel', 'mode', 'chain_mask'])
-
-
-class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
-
-    def __init__(self, controllers):
-        WifiOtaPingTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases(
-            ap_power='standard',
-            channels=[
-                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37', '6g117',
-                '6g213'
-            ],
-            modes=['bw20'],
-            chain_masks=['2x2'],
-            chamber_mode='orientation',
-            positions=list(range(0, 360, 45)),
             reference_params=['channel', 'mode', 'chain_mask'])
 
 
@@ -917,20 +900,6 @@ class WifiOtaPing_LowPowerAP_TenDegree_Test(WifiOtaPingTest):
             chain_masks=['2x2'],
             chamber_mode='orientation',
             positions=list(range(0, 360, 10)),
-            reference_params=['channel', 'mode', 'chain_mask'])
-
-
-class WifiOtaPing_LowPowerAP_45Degree_Test(WifiOtaPingTest):
-
-    def __init__(self, controllers):
-        WifiOtaPingTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases(
-            ap_power='low_power',
-            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            modes=['bw20'],
-            chain_masks=['2x2'],
-            chamber_mode='orientation',
-            positions=list(range(0, 360, 45)),
             reference_params=['channel', 'mode', 'chain_mask'])
 
 
