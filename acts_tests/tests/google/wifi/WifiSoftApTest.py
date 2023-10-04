@@ -48,7 +48,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
         req_params = ["dbs_supported_models", "sta_concurrency_supported_models",
-                      "sap_wpa3_supported_models", "wifi6_models"]
+                      "sap_wpa3_supported_models", "wifi6_models", "sim_supported_models"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -300,6 +300,8 @@ class WifiSoftApTest(WifiBaseTest):
         """
         # TODO(silberst): wifiIsPortableHotspotSupported() is currently failing.
         # Remove the extra check and logging when b/30800811 is resolved
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         hotspot_supported = self.dut.droid.wifiIsPortableHotspotSupported()
         tethering_supported = self.dut.droid.connectivityIsTetheringSupported()
         self.log.info(
@@ -320,6 +322,8 @@ class WifiSoftApTest(WifiBaseTest):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup()
 
     @test_tracker_info(uuid="6437727d-7db1-4f69-963e-f26a7797e47f")
@@ -332,6 +336,8 @@ class WifiSoftApTest(WifiBaseTest):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G)
 
     @test_tracker_info(uuid="970272fa-1302-429b-b261-51efb4dad779")
@@ -344,6 +350,8 @@ class WifiSoftApTest(WifiBaseTest):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G)
 
     @test_tracker_info(uuid="f76ed37a-519a-48b4-b260-ee3fc5a9cae0")
@@ -356,6 +364,8 @@ class WifiSoftApTest(WifiBaseTest):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_AUTO)
 
     @test_tracker_info(uuid="d26ee4df-5dcb-4191-829f-05a10b1218a7")
@@ -368,6 +378,8 @@ class WifiSoftApTest(WifiBaseTest):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G, True)
 
     @test_tracker_info(uuid="229cd585-a789-4c9a-8948-89fa72de9dd5")
@@ -380,6 +392,8 @@ class WifiSoftApTest(WifiBaseTest):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, True)
 
     @test_tracker_info(uuid="d546a143-6047-4ffd-b3c6-5ec81a38001f")
@@ -392,6 +406,8 @@ class WifiSoftApTest(WifiBaseTest):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_AUTO, True)
 
     @test_tracker_info(uuid="25996696-e9c8-4cd3-816a-44536166e69f")
@@ -402,6 +418,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure softap in default band and wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(security=WPA3_SAE_SOFTAP)
@@ -414,6 +432,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure softap in 2G band and wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(
@@ -427,6 +447,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure softap in 5G band and wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(
@@ -440,6 +462,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure softap in auto band and wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(
@@ -453,6 +477,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure hidden softap in default band and wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(security=WPA3_SAE_SOFTAP, hidden=True)
@@ -465,6 +491,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure hidden softap in 2G band and wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(
@@ -478,6 +506,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure hidden softap in 5G band and wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(
@@ -491,6 +521,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure hidden softap in auto band and wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(
@@ -504,6 +536,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure softap in default band and wpa2/wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_full_tether_startup(security=WPA3_SAE_TRANSITION_SOFTAP)
@@ -516,6 +550,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure softap in default band and wpa2/wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_full_tether_startup(
@@ -529,6 +565,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure softap in default band and wpa2/wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_full_tether_startup(
@@ -542,6 +580,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure softap in default band and wpa2/wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_full_tether_startup(
@@ -555,6 +595,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure hidden softap in 2G band and wpa2/wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_full_tether_startup(
@@ -568,6 +610,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure hidden softap in 5G band and wpa2/wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_full_tether_startup(
@@ -581,6 +625,8 @@ class WifiSoftApTest(WifiBaseTest):
         1. Configure hidden softap in auto band and wpa2/wpa3 security.
         2. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(
@@ -595,6 +641,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Reboot device and start softap.
         3. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_softap_after_reboot(
@@ -609,6 +657,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Reboot device and start softap.
         3. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_softap_after_reboot(
@@ -623,6 +673,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Reboot device and start softap.
         3. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_softap_after_reboot(
@@ -637,6 +689,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Reboot device and start softap.
         3. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_softap_after_reboot(
@@ -651,6 +705,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Reboot device and start softap.
         3. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_softap_after_reboot(
@@ -665,6 +721,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Reboot device and start softap.
         3. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA3 softAp")
         self.validate_softap_after_reboot(
@@ -679,6 +737,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Reboot device and start softap.
         3. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_softap_after_reboot(
@@ -693,6 +753,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Reboot device and start softap.
         3. Verify dut client connects to the softap.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(self.dut.model not in self.sap_wpa3_supported_models,
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_softap_after_reboot(
@@ -710,6 +772,8 @@ class WifiSoftApTest(WifiBaseTest):
         5. Shutdown wifi tethering.
         6. Ensure that the client disconnected.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         wutils.wifi_toggle_state(self.dut, True)
         wutils.wifi_connect(self.dut, self.wifi_network)
         config = self.create_softap_config()
@@ -739,6 +803,8 @@ class WifiSoftApTest(WifiBaseTest):
         6. verify back to previous mode.
         7. Turn off airplane mode.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.dut.log.debug("Toggling Airplane mode ON.")
         asserts.assert_true(utils.force_airplane_mode(self.dut, True),
                             "Can not turn on airplane mode: %s" % self.dut.serial)
@@ -754,6 +820,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Client connects to the softap
         3. Client and DUT ping each other
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G, test_ping=True)
 
     @test_tracker_info(uuid="6604e848-99d6-422c-9fdc-2882642438b6")
@@ -765,6 +833,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Client connects to the softap
         3. Client and DUT ping each other
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, test_ping=True)
 
     @test_tracker_info(uuid="17725ecd-f900-4cf7-8b2d-d7515b0a595c")
@@ -775,6 +845,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Two clients connect to the hotspot
         3. Two clients ping each other
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(len(self.android_devices) < 3,
                         "No extra android devices. Skip test")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G, test_clients=True)
@@ -787,6 +859,8 @@ class WifiSoftApTest(WifiBaseTest):
         2. Two clients connect to the hotspot
         3. Two clients ping each other
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(len(self.android_devices) < 3,
                         "No extra android devices. Skip test")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, test_clients=True)
@@ -805,6 +879,8 @@ class WifiSoftApTest(WifiBaseTest):
         8. Turn off hotspot
         9. Verify second softap callback doesn't respond after unregister
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         config = wutils.start_softap_and_verify(self, WIFI_CONFIG_APBAND_AUTO)
         # Register callback after softap enabled to avoid unnecessary callback
         # impact the test
@@ -885,6 +961,8 @@ class WifiSoftApTest(WifiBaseTest):
         7. Start wait [wifi_constants.DEFAULT_SOFTAP_TIMEOUT_S] seconds
         8. Check hotspot auto shut off
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         config = wutils.start_softap_and_verify(self, WIFI_CONFIG_APBAND_AUTO)
         # Register callback after softap enabled to avoid unnecessary callback
         # impact the test
@@ -938,6 +1016,8 @@ class WifiSoftApTest(WifiBaseTest):
         9. Start wait test_shutdown_timeout_value seconds
         10. Check hotspot auto shut off
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         # Backup config
         original_softap_config = self.dut.droid.wifiGetApConfiguration()
         # This config only included SSID and Password which used for connection
@@ -1001,6 +1081,8 @@ class WifiSoftApTest(WifiBaseTest):
            bridged_shutdown off, 11ax off configuration which are introduced in S.
         5. Restore the configuration
       """
+      asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                      "Device does not support SIM card, softAp not applicable.")
       # Backup config
       original_softap_config = self.dut.droid.wifiGetApConfiguration()
       wutils.save_wifi_soft_ap_config(self.dut, {"SSID":"ACTS_TEST"},
@@ -1040,6 +1122,8 @@ class WifiSoftApTest(WifiBaseTest):
         8. Verify client connected
         9. Restore Config
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         # Register callback to check capability first
         callbackId = self.dut.droid.registerSoftApCallback()
         # Check capability first to make sure DUT support this test.
@@ -1120,6 +1204,8 @@ class WifiSoftApTest(WifiBaseTest):
         8. Verify client connected
         9. Restore Config
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if(len(self.android_devices) < 3,
                         "Device less than 3, skip the test.")
         # Register callback to check capability first
@@ -1204,6 +1290,8 @@ class WifiSoftApTest(WifiBaseTest):
             3. Start softap and verify it works
             4. Verify a client device can connect to it.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         wutils.set_wifi_country_code(
             self.dut, wutils.WifiEnums.CountryCode.GERMANY)
         sap_config = self.create_softap_config()
@@ -1233,6 +1321,8 @@ class WifiSoftApTest(WifiBaseTest):
             2. Start softAp on DUT on 2G band.
             3. Verify softAp is started on channel 13.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "Device does not support SIM card, softAp not applicable.")
         asserts.skip_if("OpenWrtAP" not in self.user_params,
                         "Need openwrt AP to configure channel 13.")
         wutils.connect_to_wifi_network(self.dut, self.wifi_network)
