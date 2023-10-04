@@ -42,7 +42,7 @@ class RttPreFlightTest(WifiBaseTest):
         while time.time() < curr_time + TIMEOUT:
             time.sleep(WAIT_TIME)
             if wutils.start_wifi_connection_scan_and_check_for_network(
-                self.dut, SSID):
+                self.dut, SSID, True):
                 return True
         self.log.error("Failed to turn on AP")
         return False

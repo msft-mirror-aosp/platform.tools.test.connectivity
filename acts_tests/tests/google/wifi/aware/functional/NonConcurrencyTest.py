@@ -156,8 +156,9 @@ class NonConcurrencyTest(AwareBaseTest):
         # create random SSID and start softAp on dut_ap
         ap_ssid = self.TETHER_SSID + utils.rand_ascii_str(8)
         ap_password = utils.rand_ascii_str(8)
-        config = {wutils.WifiEnums.SSID_KEY: ap_ssid, wutils.WifiEnums.PWD_KEY: ap_password}
-        wutils.start_wifi_tethering(dut_ap, ap_ssid, ap_password)
+        ap_band = wutils.WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G
+        config = {wutils.WifiEnums.SSID_KEY: ap_ssid, wutils.WifiEnums.PWD_KEY: ap_password, wutils.WifiEnums.AP_BAND_KEY: ap_band}
+        wutils.start_wifi_tethering(dut_ap, ap_ssid, ap_password, band=ap_band)
         asserts.assert_true(dut_ap.droid.wifiIsApEnabled(),
                             "SoftAp is not reported as running")
 
@@ -191,7 +192,7 @@ class NonConcurrencyTest(AwareBaseTest):
         autils.wait_for_event(dut_ap, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
 
         # dut start subscribe
-        wutils.wait_for_disconnect(dut)
+        wutils.wait_for_disconnect(dut, timeout=20)
         if state_change:
             autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
             p_id = dut.droid.wifiAwareAttach()

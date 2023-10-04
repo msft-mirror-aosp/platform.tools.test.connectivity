@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import queue
 import threading
 import time
@@ -25,6 +26,7 @@ import acts_contrib.test_utils.tel.tel_test_utils as tutils
 from acts import asserts
 from acts import signals
 from acts import utils
+from acts.controllers.iperf_server import IPerfServer
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
@@ -33,11 +35,14 @@ from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 WifiEnums = wutils.WifiEnums
 
 WAIT_FOR_AUTO_CONNECT = 40
+WAIT_WIFI_DISCONNECT_SEC = 60
 WAIT_BEFORE_CONNECTION = 30
 DEFAULT_TIMEOUT = 10
 PING_ADDR = 'www.google.com'
 BAND_2GHZ = 0
 BAND_5GHZ = 1
+MIN_ATTN = 0
+MAX_ATTN = 95
 
 
 class WifiStressTest(WifiBaseTest):
@@ -68,7 +73,6 @@ class WifiStressTest(WifiBaseTest):
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
             "stress_count", "stress_hours", "attn_vals", "pno_interval",
-            "iperf_server_port"
         ]
         self.unpack_userparams(req_param_names=req_params,
                                opt_param_names=opt_param)
@@ -87,6 +91,19 @@ class WifiStressTest(WifiBaseTest):
         self.open_2g = self.open_network[0]["2g"]
         self.open_5g = self.open_network[0]["5g"]
         self.networks = [self.wpa_2g, self.wpa_5g, self.open_2g, self.open_5g]
+
+        # Use local host as iperf server.
+        asserts.assert_true(
+          wutils.get_host_public_ipv4_address(),
+          "The host has no public ip address")
+        self.iperf_server_address = wutils.get_host_public_ipv4_address()
+        self.iperf_server_port = wutils.get_iperf_server_port()
+        try:
+          self.iperf_server = IPerfServer(self.iperf_server_port)
+          self.iperf_server.start()
+          logging.info(f"IPerf server started on {self.iperf_server_port}")
+        except Exception as e:
+          raise signals.TestFailure("Failed to start iperf3 server: %s" % e)
 
     def setup_test(self):
         super().setup_test()
@@ -107,6 +124,7 @@ class WifiStressTest(WifiBaseTest):
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
+        self.iperf_server.stop()
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
@@ -201,21 +219,23 @@ class WifiStressTest(WifiBaseTest):
             expected_con: The expected info of the network to we expect the DUT
                 to roam to.
         """
-        connection_info = self.dut.droid.wifiGetConnectionInfo()
-        self.log.info("Triggering network selection from %s to %s",
+        if is_pno:
+            self.dut.log.info("Wait %ss for PNO to trigger.", self.pno_interval)
+            self.dut.log.info("Move the DUT in range of %s", self.wpa_2g[WifiEnums.SSID_KEY])
+            self.attenuators[0].set_atten(MIN_ATTN)
+            time.sleep(self.pno_interval)
+            wutils.wait_for_connect(self.dut, self.wpa_2g[WifiEnums.SSID_KEY])
+            connection_info = self.dut.droid.wifiGetConnectionInfo()
+            self.log.info("Triggering network selection from %s to %s",
                       connection_info[WifiEnums.SSID_KEY],
                       expected_con[WifiEnums.SSID_KEY])
-        self.attenuators[0].set_atten(0)
-        if is_pno:
-            self.log.info("Wait %ss for PNO to trigger.", self.pno_interval)
-            time.sleep(self.pno_interval)
         else:
             # force start a single scan so we don't have to wait for the scheduled scan.
             wutils.start_wifi_connection_scan_and_return_status(self.dut)
             self.log.info("Wait 60s for network selection.")
             time.sleep(60)
         try:
-            self.log.info("Connected to %s network after network selection" %
+            self.log.info("Connecting to %s network after network selection" %
                           self.dut.droid.wifiGetConnectionInfo())
             expected_ssid = expected_con[WifiEnums.SSID_KEY]
             verify_con = {WifiEnums.SSID_KEY: expected_ssid}
@@ -586,31 +606,31 @@ class WifiStressTest(WifiBaseTest):
         """Test PNO triggered autoconnect to a network for N times
 
         Steps:
-        1. Connect 2g network first, and then disconnect it
-        2. Save 2Ghz valid network configuration in the device.
-        3. Screen off DUT
-        4. Attenuate 5Ghz network and wait for a few seconds to trigger PNO.
-        5. Check the device connected to 2Ghz network automatically.
-        6. Repeat step 4-5
+        1. DUT Connects to a 2GHz network.
+        2. Screen off DUT.
+        3. Attenuate 2GHz network and wait for triggering PNO.
+        4. Move the DUT in range of 2GHz network.
+        5. Check the device connected to 2GHz network automatically.
+        6. Repeat step 3-5.
         """
         self.scan_and_connect_by_ssid(self.dut, self.wpa_2g)
-        wutils.wifi_forget_network(self.dut, self.wpa_2g[WifiEnums.SSID_KEY])
-        networks = [self.reference_networks[0]['2g']]
         for attenuator in self.attenuators:
-            attenuator.set_atten(95)
-        # add a saved network to DUT
-        self.add_networks(self.dut, networks)
+            attenuator.set_atten(MAX_ATTN)
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
+        self.dut.log.info("DUT screen off")
         for count in range(self.stress_count):
             self.connect_and_verify_connected_ssid(
                 self.reference_networks[0]['2g'], is_pno=True)
-            wutils.wifi_forget_network(self.dut,
-                                       networks[0][WifiEnums.SSID_KEY])
-            # move the DUT out of range
-            self.attenuators[0].set_atten(95)
-            time.sleep(10)
-            self.add_networks(self.dut, networks)
+            logging.info("Move the DUT out of range by fully attenuate %s",
+                         self.wpa_2g[WifiEnums.SSID_KEY])
+            self.attenuators[0].set_atten(MAX_ATTN)
+            logging.info("Wait for DUT to disconnect from %s",
+                         self.wpa_2g[WifiEnums.SSID_KEY])
+            wutils.wait_for_disconnect(self.dut,
+                                       timeout=WAIT_WIFI_DISCONNECT_SEC)
+            self.dut.log.info("DUT disconnected from from %s",
+                              self.wpa_2g[WifiEnums.SSID_KEY])
         wutils.set_attns(self.attenuators, "default")
         raise signals.TestPass(details="",
                                extras={
