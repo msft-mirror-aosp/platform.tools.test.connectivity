@@ -119,6 +119,10 @@ class GoogleWifiAP(WifiRetailAP):
         self.access_point = access_point.AccessPoint(init_settings)
         self.configure_ap()
 
+    def teardown(self):
+        self.access_point.stop_all_aps()
+        super().teardown()
+
     def read_ap_settings(self):
         """Function that reads current ap settings."""
         return self.ap_settings.copy()
