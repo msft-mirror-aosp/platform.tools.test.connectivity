@@ -57,7 +57,10 @@ class WifiBridgedApTest(WifiBaseTest):
             self.client1 = self.android_devices[1]
             self.client2 = self.android_devices[2]
         else:
-            raise signals.TestFailure("WifiBridgedApTest requires 3 DUTs")
+            raise signals.TestAbortClass("WifiBridgedApTest requires 3 DUTs")
+
+        if not self.dut.droid.wifiIsBridgedApConcurrencySupported():
+            raise signals.TestAbortClass("Legacy phone is not supported")
 
         req_params = ["dbs_supported_models"]
         opt_param = []
