@@ -14,14 +14,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import ipaddress
 import logging
 import os
 import re
 import shutil
+import random
 import subprocess
 import time
 
 from retry import retry
+from typing import Optional, Union
 
 from collections import namedtuple
 from enum import IntEnum
@@ -54,6 +57,8 @@ DEFAULT_SCAN_TRIES = 3
 DEFAULT_CONNECT_TRIES = 3
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
+# WiFi scan retry interval
+WIFI_SCAN_RETRY_INTERVAL_SEC = 5
 
 DEFAULT_PING_ADDR = "https://www.google.com/robots.txt"
 
@@ -933,13 +938,21 @@ def start_wifi_connection_scan_and_check_for_network(ad,
             match_results = match_networks({WifiEnums.SSID_KEY: network_ssid},
                                            scan_results)
             if found == (len(match_results) > 0):
-                if len(match_results) > 0:
-                    ad.log.debug("Found network in %s seconds." %
-                                 (time.time() - start_time))
-                else:
-                    ad.log.debug("Did not find network in %s seconds." %
-                                 (time.time() - start_time))
-                return True
+                if found:
+                    ad.log.debug("%s network found in %s seconds." %
+                                  (network_ssid, (time.time() - start_time)))
+                    return True
+                # if found == False, we loop over till max_tries to make sure the ssid is
+                # really no show.
+                elif not found and (num_tries + 1) == max_tries:
+                    ad.log.debug("%s network not found in %d tries in %s seconds." %
+                                 (network_ssid, max_tries, (time.time() - start_time)))
+                    return True
+        else:
+            if (num_tries + 1) == max_tries:
+                break
+            # wait for a while when a WiFi scan is failed, e.g. because of device busy.
+            time.sleep(WIFI_SCAN_RETRY_INTERVAL_SEC)
     return False
 
 
@@ -961,7 +974,7 @@ def start_wifi_connection_scan_and_ensure_network_found(
         " after " + str(max_tries) + " tries"
     asserts.assert_true(
         start_wifi_connection_scan_and_check_for_network(
-            ad, network_ssid, max_tries), assert_msg, True)
+            ad, network_ssid, max_tries, True), assert_msg)
 
 
 def start_wifi_connection_scan_and_ensure_network_not_found(
@@ -982,7 +995,7 @@ def start_wifi_connection_scan_and_ensure_network_not_found(
         " after " + str(max_tries) + " tries"
     asserts.assert_true(
         start_wifi_connection_scan_and_check_for_network(
-            ad, network_ssid, max_tries), assert_msg, False)
+            ad, network_ssid, max_tries, False), assert_msg)
 
 
 def start_wifi_background_scan(ad, scan_setting):
@@ -2873,12 +2886,23 @@ def check_available_channels_in_bands_2_5(dut, country_code):
     """Check if DUT is capable of enable BridgedAp.
     #TODO: Find a way to make this function flexible by taking an argument.
 
+    Check points:
+        1. Check the DUT support by calling Android API.
+        2. Check the dual SAP bands support by changing DUT to the given country_code.
+
     Args:
         country_code: country code, e.g., 'US', 'JP'.
     Returns:
         True: If DUT is capable of enable BridgedAp.
         False: If DUT is not capable of enable BridgedAp.
     """
+    # Check point #1
+    is_bridged_ap_supported = dut.droid.wifiIsBridgedApConcurrencySupported()
+    if not is_bridged_ap_supported:
+        logging.error("DUT %s doesn't support bridged AP.", dut.model)
+        return False
+
+    # Check point #2
     set_wifi_country_code(dut, country_code)
     country = dut.droid.wifiGetCountryCode()
     dut.log.info("DUT current country code : {}".format(country))
@@ -2896,6 +2920,8 @@ def check_available_channels_in_bands_2_5(dut, country_code):
         capability[wifi_constants.
                    SOFTAP_CAPABILITY_5GHZ_SUPPORTED_CHANNEL_LIST]:
         return True
+
+    logging.error("DUT in %s doesn't support dual SAP bands (2G and 5G).", country_code)
     return False
 
 
@@ -3014,3 +3040,99 @@ def kill_iperf3_server_by_port(port: str):
                               f"kill it with PID {pid}")
     except subprocess.CalledProcessError:
         logging.info("Error executing shell command with subprocess.")
+
+def get_host_public_ipv4_address() -> Optional[str]:
+  """Retrieves the host's public IPv4 address using the ifconfig command.
+
+  This function tries to extract the host's public IPv4 address by parsing
+  the output of the ifconfig command. It will filter out private IP addresses
+  (e.g., 10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16).
+
+  Returns:
+    str: The public IPv4 address, if found.
+    None: If no public IPv4 address is found or in case of errors.
+
+  Raises:
+    May print errors related to executing ifconfig or parsing the IPs, but
+    exceptions are handled and won't be raised beyond the function.
+  """
+  try:
+    # Run ifconfig command and get its output
+    output = subprocess.check_output(["ifconfig"], universal_newlines=True)
+  except subprocess.CalledProcessError:
+    logging.info("Error executing ifconfig command.")
+    return None
+  except FileNotFoundError:
+    logging.info("ifconfig command not found.")
+    return None
+  except Exception as e:
+    logging.info("An unexpected error occurred: %s", e)
+    return None
+
+  # Regular expression to capture IPv4 addresses that come after the word 'inet'
+  pattern = r'inet (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+
+  # Extract all matches
+  matches = re.findall(pattern, output)
+
+  # Return the first public IP address found
+  for ip_str in matches:
+    try:
+      ip = ipaddress.ip_address(ip_str)
+      if not ip.is_private:
+        return ip_str
+    except ValueError:
+      logging.info("Invalid IP address format: %s", ip_str)
+      continue
+
+  # Return None if no public IP is found
+  return None
+
+def get_iperf_server_port():
+  """Gets a unique port number within the Dynamic port range (49152-65535).
+
+  This function first determines which ports are currently in use, and then
+  selects a random port from the dynamic range that is not in use.
+
+  Returns:
+    int: An unused port number.
+
+  Raises:
+    Exception: If no available port is found in the Dynamic Ports range.
+  """
+
+  def get_used_ports():
+    """Retrieve a list of ports that are currently in use on the system.
+
+    This function uses the 'netstat' command to determine which ports are
+    currently in use, and then parses the output to extract the port numbers.
+
+    Returns:
+        list[int]: A list of ports currently in use.
+    """
+    try:
+      # Get the output from the `netstat` command.
+      output = subprocess.check_output(['netstat', '-tuln']).decode('utf-8')
+
+      # Use a regex to extract port numbers from the output.
+      port_pattern = re.compile(r'(?<=:)\d+')
+      ports = port_pattern.findall(output)
+
+      # Convert the list of ports to integers and return.
+      return list(map(int, ports))
+    except Exception as e:
+      logging.error(f"Error: {e}")
+      return []
+
+  # Define the range for Dynamic Ports.
+  dynamic_ports_range = list(range(49152, 65536))
+  used_ports = get_used_ports()
+
+  # Randomly shuffle the ports and then find one that's not in use.
+  random.shuffle(dynamic_ports_range)
+
+  for port in dynamic_ports_range:
+    if port not in used_ports:
+      return port
+
+  raise RuntimeError("No available port found in the Dynamic Ports range!")

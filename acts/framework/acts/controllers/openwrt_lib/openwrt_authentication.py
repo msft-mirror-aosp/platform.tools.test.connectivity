@@ -1,6 +1,8 @@
 import logging
 import os
 import paramiko
+import scp
+import subprocess
 
 
 _REMOTE_PATH = '/etc/dropbear/authorized_keys'
@@ -30,8 +32,9 @@ class OpenWrtAuth:
     self.password = password
     self.port = port
     self.public_key = None
-    self.public_key_file = None
-    self.private_key_file = None
+    self.key_dir = '/tmp/openwrt/'
+    self.public_key_file = f'{self.key_dir}id_rsa_{self.hostname}.pub'
+    self.private_key_file = f'{self.key_dir}id_rsa_{self.hostname}'
 
   def generate_rsa_key(self):
     """
@@ -44,26 +47,30 @@ class OpenWrtAuth:
       PermissionError: If there is a permission error while creating the directory for saving the keys.
       Exception: If an unexpected error occurs while generating the RSA key pair.
     """
+    # Checks if the private and public key files already exist.
+    if os.path.exists(self.private_key_file) and os.path.exists(self.public_key_file):
+      logging.warning("RSA key pair already exists, skipping key generation.")
+      return
+
     try:
       # Generates an RSA key pair in /tmp/openwrt/ directory.
       logging.info("Generating RSA key pair...")
       key = paramiko.RSAKey.generate(bits=2048)
       self.public_key = f"ssh-rsa {key.get_base64()}"
-      logging.info(f"Public key: {self.public_key}")
+      logging.debug(f"Public key: {self.public_key}")
 
       # Create /tmp/openwrt/ directory if it doesn't exist.
-      logging.info("Creating /tmp/openwrt/ directory...")
-      os.makedirs('/tmp/openwrt/', exist_ok=True)
+      logging.info(f"Creating {self.key_dir} directory...")
+      os.makedirs(self.key_dir, exist_ok=True)
 
       # Saves the private key to a file.
-      self.private_key_file = '/tmp/openwrt/id_rsa'
       key.write_private_key_file(self.private_key_file)
+      logging.debug(f"Saved private key to file: {self.private_key_file}")
 
       # Saves the public key to a file.
-      self.public_key_file = '/tmp/openwrt/id_rsa.pub'
       with open(self.public_key_file, "w") as f:
           f.write(self.public_key)
-      logging.info(f"Saved public key to file: {self.public_key_file}")
+      logging.debug(f"Saved public key to file: {self.public_key_file}")
     except (ValueError, paramiko.SSHException, PermissionError) as e:
       logging.error(f"An error occurred while generating the RSA key pair: {e}")
     except Exception as e:
@@ -87,12 +94,14 @@ class OpenWrtAuth:
         ssh.connect(hostname=self.hostname,
                     port=self.port,
                     username=self.username,
-                    password=self.password,
-                    key_filename='/tmp/openwrt/id_rsa')
-        with ssh.open_sftp() as sftp:
-          sftp.put(self.public_key_file, _REMOTE_PATH)
+                    password=self.password)
+        scp_client = scp.SCPClient(ssh.get_transport())
+        scp_client.put(self.public_key_file, _REMOTE_PATH)
       logging.info('Public key uploaded successfully.')
-    except (paramiko.AuthenticationException, paramiko.SSHException, FileNotFoundError) as e:
+    except (paramiko.AuthenticationException,
+            paramiko.SSHException,
+            FileNotFoundError) as e:
       logging.error(f"An error occurred while sending the public key: {e}")
     except Exception as e:
-      logging.error(f"An unexpected error occurred while sending the public key: {e}")
+      logging.error(f"An unexpected error occurred while "
+                    f"sending the public key: {e}")
