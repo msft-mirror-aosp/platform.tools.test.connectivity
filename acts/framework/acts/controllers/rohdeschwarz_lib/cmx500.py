@@ -361,6 +361,10 @@ class Cmx500(abstract_inst.SocketInstrument):
         """
         raise NotImplementedError()
 
+    def network_apply_changes(self):
+        """Uses self._network to apply changes"""
+        self._network.apply_changes()
+
     def reset(self):
         """System level reset."""
 
@@ -927,6 +931,7 @@ class LteBaseStation(BaseStation):
         """Disables all ul subframes for LTE cell."""
         self._cc.disable_all_ul_subframes()
         self._network.apply_changes()
+        logger.info('lte cell disable all ul subframes completed')
 
     def set_bandwidth(self, bandwidth):
         """Sets the channel bandwidth of the cell.
@@ -937,8 +942,66 @@ class LteBaseStation(BaseStation):
         self._cell.set_bandwidth(self._to_rb_bandwidth(bandwidth))
         self._network.apply_changes()
 
-    def set_cdrx_config(self):
-        """Sets LTE cdrx config for endc."""
+    def set_cdrx_config(self, config):
+        """Configures LTE cdrx with lte config parameters.
+
+        config: The LteCellConfig for current base station.
+        """
+
+        logger.info(
+            f'Configure Lte drx with\n'
+            f'drx_on_duration_timer: {config.drx_on_duration_timer}\n'
+            f'drx_inactivity_timer: {config.drx_inactivity_timer}\n'
+            f'drx_retransmission_timer: {config.drx_retransmission_timer}\n'
+            f'drx_long_cycle: {config.drx_long_cycle}\n'
+            f'drx_long_cycle_offset: {config.drx_long_cycle_offset}'
+        )
+
+        from mrtype.lte.drx import (
+            LteDrxConfig,
+            LteDrxInactivityTimer,
+            LteDrxOnDurationTimer,
+            LteDrxRetransmissionTimer,
+        )
+
+        from mrtype.lte.drx import LteDrxLongCycleStartOffset as longCycle
+
+        long_cycle_mapping = {
+            10: longCycle.ms10, 20: longCycle.ms20, 32: longCycle.ms32,
+            40: longCycle.ms40, 60: longCycle.ms60, 64: longCycle.ms64,
+            70: longCycle.ms70, 80: longCycle.ms80, 128: longCycle.ms128,
+            160: longCycle.ms160, 256: longCycle.ms256, 320: longCycle.ms320,
+            512: longCycle.ms512, 640: longCycle.ms640, 1280: longCycle.ms1280,
+            2048: longCycle.ms2048, 2560: longCycle.ms2560
+        }
+
+        drx_on_duration_timer = LteDrxOnDurationTimer(
+            int(config.drx_on_duration_timer)
+        )
+        drx_inactivity_timer = LteDrxInactivityTimer(
+            int(config.drx_inactivity_timer)
+        )
+        drx_retransmission_timer = LteDrxRetransmissionTimer(
+            int(config.drx_retransmission_timer)
+        )
+        drx_long_cycle = long_cycle_mapping[int(config.drx_long_cycle)]
+        drx_long_cycle_offset = drx_long_cycle(config.drx_long_cycle_offset)
+
+        lte_drx_config = LteDrxConfig(
+            on_duration_timer=drx_on_duration_timer,
+            inactivity_timer=drx_inactivity_timer,
+            retransmission_timer=drx_retransmission_timer,
+            long_cycle_start_offset=drx_long_cycle_offset,
+            short_drx=None
+        )
+
+        self._cmx.dut.lte_cell_group().set_drx_and_adjust_scheduler(
+            drx_config=lte_drx_config
+        )
+        self._network.apply_changes()
+
+    def set_default_cdrx_config(self):
+        """Sets default LTE cdrx config for endc (for legacy code)."""
         from mrtype.lte.drx import (
             LteDrxConfig,
             LteDrxInactivityTimer,
@@ -1261,15 +1324,17 @@ class NrBaseStation(BaseStation):
         from rs_mrt.testenvironment.signaling.sri.rat.nr.config import CellFrequencyBandReq
         from rs_mrt.testenvironment.signaling.sri.rat.common import SetupRelease
 
-        logger.info('Config flexible slots')
         req = CellFrequencyBandReq()
         req.band.frequency_range.fr1.tdd.tdd_config_common.setup_release = SetupRelease.RELEASE
         self._cell.stub.SetCellFrequencyBand(req)
         self._network.apply_changes()
+        logger.info('Config flexible slots completed')
 
     def disable_all_ul_slots(self):
-        """Disables all ul slots for NR cell"""
+        """Disable all uplink scheduling slots for NR cell"""
         self._cc.disable_all_ul_slots()
+        self._network.apply_changes()
+        logger.info('Disabled all uplink scheduling slots for the nr cell')
 
     @property
     def dl_channel(self):
@@ -1326,6 +1391,13 @@ class NrBaseStation(BaseStation):
         logger.info(
             'The bandwidth in MHz is {}. After setting, the value is {}'.
             format(bandwidth, str(self._cell.get_carrier_bandwidth())))
+
+    def set_cdrx_config(self, config):
+        """Configures NR cdrx with nr config parameters.
+
+        config: The NrCellConfig for current base station.
+        """
+        logger.warning('Not implement yet')
 
     def set_dl_channel(self, channel):
         """Sets the downlink channel number of cell.
