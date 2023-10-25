@@ -83,7 +83,50 @@ class AbstractCellularSimulator:
         if isinstance(config, cellular_lib.NrCellConfig.NrCellConfig):
             self.configure_nr_bts(config, bts_index)
 
-    def configure_lte_bts(self, config, bts_index=0):
+    def configure_bts_after_started(self, config, bts_index=0):
+        """ Commands the equipment to setup a base station with the required
+        configuration after simulation started. This method applies
+        configurations for some simulator.
+
+        Args:
+            config: a BaseSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+
+        self.log.info('Configure after simulation started for some simulator')
+
+        if isinstance(config, cellular_lib.LteCellConfig.LteCellConfig):
+            self.configure_lte_bts_after_started(config, bts_index)
+
+        if isinstance(config, cellular_lib.NrCellConfig.NrCellConfig):
+            self.configure_nr_bts_after_started(config, bts_index)
+
+
+    def configure_lte_bts_after_started(self, config, bts_index=0):
+        """ Commands the equipment to further setup a lte base station.
+
+        This is for some simulator where further setup is needed after the
+           simulation started.
+
+        Args:
+            config: a BaseSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+        pass
+
+    def configure_nr_bts_after_started(self, config, bts_index=0):
+        """ Commands the equipment to further setup a lte base station.
+
+        This is for some simulator where further setup is needed after the
+           simulation started.
+
+        Args:
+            config: a BaseSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+        pass
+
+    def configure_lte_bts_base(self, config, bts_index=0):
         """ Commands the equipment to setup an LTE base station with the
         required configuration.
 
@@ -152,6 +195,23 @@ class AbstractCellularSimulator:
         if config.phich:
             self.set_phich_resource(bts_index, config.phich)
 
+    def configure_lte_bts(self, config, bts_index=0):
+        """ Commands the equipment to setup an LTE base station with the
+        required configuration.
+
+        For some simulator (for example cmx500), cdrx has to be configured after
+        similation started in some cases (for example nsa test). Also, it is
+        fine for this simulator to configure cdrx after the cell starts. Thus,
+        split the method of configure_lte_bts to two parts so that the cdrx
+        configuration could be done after the simulation starts for some
+        simulator.
+
+        Args:
+            config: an LteSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+
+        self.configure_lte_bts_base(config, bts_index=bts_index)
         if config.drx_connected_mode:
             self.set_drx_connected_mode(bts_index, config.drx_connected_mode)
 
