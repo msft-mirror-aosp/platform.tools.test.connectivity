@@ -203,8 +203,9 @@ class WifiSoftApAcsTest(WifiBaseTest):
                                                channel_2g=channel_2g,
                                                channel_5g=channel_5g)
         elif "OpenWrtAP" in self.user_params:
+            self.openwrt = self.access_points[0]
             self.configure_openwrt_ap_and_start(wpa_network=True,
-                                                wep_network=True,
+                                                wep_network=self.openwrt.is_version_under_20(),
                                                 channel_2g=channel_2g,
                                                 channel_5g=channel_5g)
 

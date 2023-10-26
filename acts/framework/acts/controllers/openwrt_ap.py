@@ -1,5 +1,6 @@
 """Controller for Open WRT access point."""
 
+import ast
 import logging
 import random
 import re
@@ -652,6 +653,19 @@ class OpenWrtAP(object):
         return board_name
     self.log.info("Failed to retrieve OpenWrt model information.")
     return None
+
+  def get_version(self):
+    """Get Openwrt version.
+
+    Returns:
+      A string with version number.
+    """
+    out = self.ssh.run(SYSTEM_INFO_CMD).stdout
+    return ast.literal_eval(out)["release"]["version"]
+
+  def is_version_under_20(self):
+    """Boolean if version under 20."""
+    return int(self.get_version().split(".")[0]) < 20
 
   def close(self):
     """Reset wireless and network settings to default and stop AP."""
