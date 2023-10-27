@@ -24,14 +24,14 @@ import os
 from acts import context
 from acts import base_test
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
+from acts_contrib.test_utils.cellular.performance import cellular_performance_test_utils as cputils
+from acts_contrib.test_utils.cellular.performance.CellularThroughputBaseTest import CellularThroughputBaseTest
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
-from CellularLtePlusFr1PeakThroughputTest import CellularLteSingleCellPeakThroughputTest
-
 from functools import partial
 
 
-class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
+class CellularLteSensitivityTest(CellularThroughputBaseTest):
     """Class to test single cell LTE sensitivity"""
 
     def __init__(self, controllers):
@@ -100,7 +100,6 @@ class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
                 width=1,
                 style='dashed')
 
-        # Compute average RvRs and compute metrics over orientations
         for test_id, test_data in compiled_data.items():
             test_id_rvr = test_id + tuple('RvR')
             cell_power_interp = sorted(set(sum(test_data['cell_power'], [])))
@@ -123,17 +122,29 @@ class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
         output_file_path = os.path.join(self.log_path, 'results.html')
         BokehFigure.save_figures(figure_list, output_file_path)
 
+        """Saves CSV with all test results to enable comparison."""
+        results_file_path = os.path.join(
+            context.get_current_context().get_full_output_path(),
+            'results.csv')
+        with open(results_file_path, 'w', newline='') as csvfile:
+            field_names = [
+                'Test Name', 'Sensitivity'
+            ]
+            writer = csv.DictWriter(csvfile, fieldnames=field_names)
+            writer.writeheader()
+
+            for testcase_name, testcase_results in self.testclass_results.items(
+            ):
+                row_dict = {
+                    'Test Name': testcase_name,
+                    'Sensitivity': testcase_results['sensitivity']
+                }
+                writer.writerow(row_dict)
+
     def process_testcase_results(self):
         if self.current_test_name not in self.testclass_results:
             return
         testcase_data = self.testclass_results[self.current_test_name]
-        results_file_path = os.path.join(
-            context.get_current_context().get_full_output_path(),
-            '{}.json'.format(self.current_test_name))
-        with open(results_file_path, 'w') as results_file:
-            json.dump(wputils.serialize_dict(testcase_data),
-                      results_file,
-                      indent=4)
 
         bler_list = []
         average_throughput_list = []
@@ -176,6 +187,14 @@ class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
         testcase_data['cell_power_list'] = cell_power_list
         testcase_data['sensitivity'] = sensitivity
 
+        results_file_path = os.path.join(
+            context.get_current_context().get_full_output_path(),
+            '{}.json'.format(self.current_test_name))
+        with open(results_file_path, 'w') as results_file:
+            json.dump(wputils.serialize_dict(testcase_data),
+                      results_file,
+                      indent=4)
+
     def get_per_cell_power_sweeps(self, testcase_params):
         # get reference test
         current_band = testcase_params['endc_combo_config']['cell_list'][0][
@@ -217,7 +236,7 @@ class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
                     test_configs, dl_mcs_list):
                 if int(test_config['skip_test']):
                     continue
-                endc_combo_config = self.generate_endc_combo_config(
+                endc_combo_config = cputils.generate_endc_combo_config_from_csv_row(
                     test_config)
                 test_name = 'test_lte_B{}_dl_{}_mcs{}'.format(
                     test_config['lte_band'], lte_dl_mcs_table, lte_dl_mcs)
@@ -232,3 +251,21 @@ class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
                         partial(self._test_throughput_bler, test_params))
                 test_cases.append(test_name)
         return test_cases
+
+
+class CellularLteSensitivity_SampleMCS_Test(CellularLteSensitivityTest):
+    """Class to test single cell LTE sensitivity"""
+
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.testcase_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
+        self.testclass_params = self.user_params['lte_sensitivity_test_params']
+        self.tests = self.generate_test_cases(dl_mcs_list=[27,25,16,9],
+                                              lte_dl_mcs_table='QAM256',
+                                              lte_ul_mcs_table='QAM256',
+                                              lte_ul_mcs=4,
+                                              transform_precoding=0)

@@ -40,6 +40,7 @@ LONG_SLEEP = 10
 MEDIUM_SLEEP = 2
 IPERF_TIMEOUT = 10
 SHORT_SLEEP = 1
+VERY_SHORT_SLEEP = 0.1
 SUBFRAME_LENGTH = 0.001
 STOP_COUNTER_LIMIT = 3
 
@@ -245,7 +246,7 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                 testcase_params['bler_measurement_length'])
         if testcase_params['endc_combo_config']['lte_cell_count']:
             self.keysight_test_app.start_bler_measurement(
-                'LTE', testcase_params['endc_combo_config']['lte_carriers'][0],
+                'LTE', testcase_params['endc_combo_config']['lte_dl_carriers'][0],
                 testcase_params['bler_measurement_length'])
 
         if self.testclass_params['traffic_type'] != 'PHY':
@@ -255,64 +256,59 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
         if testcase_params['endc_combo_config']['nr_cell_count']:
             result['nr_bler_result'] = self.keysight_test_app.get_bler_result(
                 'NR5G', testcase_params['endc_combo_config']['nr_dl_carriers'],
+                testcase_params['endc_combo_config']['nr_ul_carriers'],
                 testcase_params['bler_measurement_length'])
             result['nr_tput_result'] = self.keysight_test_app.get_throughput(
-                'NR5G', testcase_params['endc_combo_config']['nr_dl_carriers'])
+                'NR5G', testcase_params['endc_combo_config']['nr_dl_carriers'],
+                testcase_params['endc_combo_config']['nr_ul_carriers'])
         if testcase_params['endc_combo_config']['lte_cell_count']:
             result['lte_bler_result'] = self.keysight_test_app.get_bler_result(
-                'LTE', testcase_params['endc_combo_config']['lte_carriers'],
-                testcase_params['bler_measurement_length'])
+                cell_type='LTE', dl_cells=testcase_params['endc_combo_config']['lte_dl_carriers'],
+                ul_cells=testcase_params['endc_combo_config']['lte_ul_carriers'],
+                length=testcase_params['bler_measurement_length'])
             result['lte_tput_result'] = self.keysight_test_app.get_throughput(
-                'LTE', testcase_params['endc_combo_config']['lte_carriers'])
+                'LTE', testcase_params['endc_combo_config']['lte_dl_carriers'],
+                testcase_params['endc_combo_config']['lte_ul_carriers'])
         return result
 
     def print_throughput_result(self, result):
         # Print Test Summary
         if 'nr_tput_result' in result:
+
             self.log.info(
-                "----NR5G STATS-------NR5G STATS-------NR5G STATS---")
-            self.log.info(
-                "DL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
+                "NR5G DL PHY Tput (Mbps) (Min/Avg/Max/Th): {:.2f} / {:.2f} / {:.2f} / {:.2f}\tBLER: {:.2f}"
                 .format(
                     result['nr_tput_result']['total']['DL']['min_tput'],
                     result['nr_tput_result']['total']['DL']['average_tput'],
                     result['nr_tput_result']['total']['DL']['max_tput'],
-                    result['nr_tput_result']['total']['DL']
-                    ['theoretical_tput']))
+                    result['nr_tput_result']['total']['DL']['theoretical_tput'],
+                    result['nr_bler_result']['total']['DL']['nack_ratio'] * 100))
             self.log.info(
-                "UL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
+                "NR5G UL PHY Tput (Mbps) (Min/Avg/Max/Th): {:.2f} / {:.2f} / {:.2f} / {:.2f}\tBLER: {:.2f}"
                 .format(
                     result['nr_tput_result']['total']['UL']['min_tput'],
                     result['nr_tput_result']['total']['UL']['average_tput'],
                     result['nr_tput_result']['total']['UL']['max_tput'],
-                    result['nr_tput_result']['total']['UL']
-                    ['theoretical_tput']))
-            self.log.info("DL BLER: {:.2f}%\tUL BLER: {:.2f}%".format(
-                result['nr_bler_result']['total']['DL']['nack_ratio'] * 100,
-                result['nr_bler_result']['total']['UL']['nack_ratio'] * 100))
+                    result['nr_tput_result']['total']['UL']['theoretical_tput'],
+                    result['nr_bler_result']['total']['UL']['nack_ratio'] * 100))
         if 'lte_tput_result' in result:
-            self.log.info("----LTE STATS-------LTE STATS-------LTE STATS---")
             self.log.info(
-                "DL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
+                "LTE DL PHY Tput (Mbps) (Min/Avg/Max/Th): {:.2f} / {:.2f} / {:.2f} / {:.2f}\tBLER: {:.2f}"
                 .format(
                     result['lte_tput_result']['total']['DL']['min_tput'],
                     result['lte_tput_result']['total']['DL']['average_tput'],
                     result['lte_tput_result']['total']['DL']['max_tput'],
-                    result['lte_tput_result']['total']['DL']
-                    ['theoretical_tput']))
+                    result['lte_tput_result']['total']['DL']['theoretical_tput'],
+                    result['lte_bler_result']['total']['DL']['nack_ratio'] * 100))
             if self.testclass_params['lte_ul_mac_padding']:
                 self.log.info(
-                    "UL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
+                    "LTE UL PHY Tput (Mbps) (Min/Avg/Max/Th): {:.2f} / {:.2f} / {:.2f} / {:.2f}\tBLER: {:.2f}"
                     .format(
                         result['lte_tput_result']['total']['UL']['min_tput'],
-                        result['lte_tput_result']['total']['UL']
-                        ['average_tput'],
+                        result['lte_tput_result']['total']['UL']['average_tput'],
                         result['lte_tput_result']['total']['UL']['max_tput'],
-                        result['lte_tput_result']['total']['UL']
-                        ['theoretical_tput']))
-            self.log.info("DL BLER: {:.2f}%\tUL BLER: {:.2f}%".format(
-                result['lte_bler_result']['total']['DL']['nack_ratio'] * 100,
-                result['lte_bler_result']['total']['UL']['nack_ratio'] * 100))
+                        result['lte_tput_result']['total']['UL']['theoretical_tput'],
+                        result['lte_bler_result']['total']['UL']['nack_ratio'] * 100))
             if self.testclass_params['traffic_type'] != 'PHY':
                 self.log.info("{} Tput: {:.2f} Mbps".format(
                     self.testclass_params['traffic_type'],
@@ -337,15 +333,18 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
             self.keysight_test_app.set_cell_input_power(
                 cell['cell_type'], cell['cell_number'],
                self.testclass_params['input_power'][cell['cell_type']])
-            self.keysight_test_app.set_cell_ul_power_control(
-                cell['cell_type'], cell['cell_number'],
-                self.testclass_params['ul_power_control_mode'],
-                self.testclass_params.get('ul_power_control_target',0)
-            )
+            if cell['cell_type'] == 'LTE' and cell['pcc'] == 0:
+                pass
+            else:
+                self.keysight_test_app.set_cell_ul_power_control(
+                    cell['cell_type'], cell['cell_number'],
+                    self.testclass_params['ul_power_control_mode'],
+                    self.testclass_params.get('ul_power_control_target',0)
+                )
             if cell['cell_type'] == 'NR5G':
                 self.keysight_test_app.set_nr_subcarrier_spacing(
                     cell['cell_number'], cell['subcarrier_spacing'])
-            if 'channel' in cell:
+            if 'channel' in cell and cell['channel'] is not None:
                 self.keysight_test_app.set_cell_channel(
                     cell['cell_type'], cell['cell_number'], cell['channel'])
             self.keysight_test_app.set_cell_bandwidth(cell['cell_type'],
@@ -377,7 +376,6 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                 self.testclass_params['lte_ul_mac_padding'])
 
         if testcase_params['endc_combo_config']['nr_cell_count']:
-
             if 'schedule_scenario' in testcase_params:
                 self.keysight_test_app.set_nr_cell_schedule_scenario(
                     'CELL1',
@@ -406,18 +404,12 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                         cell['cell_number']))
                     self.keysight_test_app.set_cell_state(cell['cell_type'],
                                                           cell['cell_number'], 1)
-            # Activate LTE aggregation if applicable
-            if testcase_params['endc_combo_config']['lte_scc_list']:
-                self.keysight_test_app.apply_lte_carrier_agg(
-                    testcase_params['endc_combo_config']['lte_scc_list'])
             self.log.info('Waiting for LTE connections')
             # Turn airplane mode off
             num_apm_toggles = 10
             for idx in range(num_apm_toggles):
                 self.log.info('Turning off airplane mode')
-                #asserts.assert_true(utils.force_airplane_mode(self.dut, False),
-                #                    'Can not turn off airplane mode.')
-                tel_utils.toggle_airplane_mode(self.log, self.dut, False)
+                cputils.toggle_airplane_mode(self.log, self.dut, False, False, idx)
                 if self.keysight_test_app.wait_for_cell_status(
                         'LTE', 'CELL1', 'CONN', 10*(idx+1)):
                     self.log.info('Connected! Waiting for {} seconds.'.format(LONG_SLEEP))
@@ -425,12 +417,14 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                     break
                 elif idx < num_apm_toggles - 1:
                     self.log.info('Turning on airplane mode')
-                #    asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                #                        'Can not turn on airplane mode.')
-                    tel_utils.toggle_airplane_mode(self.log, self.dut, True)
+                    cputils.toggle_airplane_mode(self.log, self.dut, True, False, idx)
                     time.sleep(MEDIUM_SLEEP)
                 else:
                     asserts.fail('DUT did not connect to LTE.')
+            # Activate LTE aggregation if applicable
+            if testcase_params['endc_combo_config']['lte_scc_list']:
+                self.keysight_test_app.apply_lte_carrier_agg(
+                    testcase_params['endc_combo_config']['lte_scc_list'])
 
             if testcase_params['endc_combo_config']['nr_cell_count']:
                 self.keysight_test_app.apply_carrier_agg()
@@ -454,9 +448,7 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
             num_apm_toggles = 10
             for idx in range(num_apm_toggles):
                 self.log.info('Turning off airplane mode now.')
-                #asserts.assert_true(utils.force_airplane_mode(self.dut, False),
-                #                    'Can not turn off airplane mode.')
-                tel_utils.toggle_airplane_mode(self.log, self.dut, False)
+                cputils.toggle_airplane_mode(self.log, self.dut, False, False, idx)
                 if self.keysight_test_app.wait_for_cell_status(
                         'NR5G', 'CELL1', 'CONN', 10*(idx+1)):
                     self.log.info('Connected! Waiting for {} seconds.'.format(LONG_SLEEP))
@@ -464,9 +456,7 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                     break
                 elif idx < num_apm_toggles - 1:
                     self.log.info('Turning on airplane mode now.')
-                #    asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                #                        'Can not turn on airplane mode.')
-                    tel_utils.toggle_airplane_mode(self.log, self.dut, True)
+                    cputils.toggle_airplane_mode(self.log, self.dut, True, False, idx)
                     time.sleep(MEDIUM_SLEEP)
                 else:
                     asserts.fail('DUT did not connect to NR.')
@@ -502,6 +492,16 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                                                       'OTAGRAPH')
         for power_idx in range(len(testcase_params['cell_power_sweep'][0])):
             result = collections.OrderedDict()
+            # Check that cells are still connected
+            connected = 1
+            for cell in testcase_params['endc_combo_config']['cell_list']:
+                if not self.keysight_test_app.wait_for_cell_status(
+                    cell['cell_type'], cell['cell_number'],
+                        ['ACT', 'CONN'], VERY_SHORT_SLEEP,VERY_SHORT_SLEEP):
+                    connected = 0
+            if not connected:
+                self.log.info('DUT lost connection to cells. Ending test.')
+                break
             # Set DL cell power
             for cell_idx, cell in enumerate(
                     testcase_params['endc_combo_config']['cell_list']):
