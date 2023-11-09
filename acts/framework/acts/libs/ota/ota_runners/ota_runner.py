@@ -68,7 +68,7 @@ class OtaRunner(object):
                 self.android_device.log.info('Re-installing SL4A from "%s".',
                                              self.get_sl4a_apk())
                 self.android_device.adb.install(
-                    '-r -g %s' % self.get_sl4a_apk(), ignore_status=True)
+                    '-r -g -t %s' % self.get_sl4a_apk(), ignore_status=True)
                 time.sleep(SL4A_SERVICE_SETUP_TIME)
                 if self.android_device.is_sl4a_installed():
                     break
