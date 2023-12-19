@@ -25,6 +25,7 @@ WifiEnums = wutils.WifiEnums
 MAX_ATTN = 95
 WAIT_WIFI_SCAN_RESULTS_SEC = 10
 WAIT_ATTENUATION_SEC = 5
+WAIT_WIFI_DISCONNECT_SEC = 60
 
 class WifiPnoTest(WifiBaseTest):
 
@@ -103,25 +104,39 @@ class WifiPnoTest(WifiBaseTest):
             raise
 
     def trigger_pno_and_assert_connect(self, ad, attn_val_name, expected_con):
-        """Sets attenuators to disconnect current connection to trigger PNO.
-        Validate that the DUT connected to the new SSID as expected after PNO.
+        """Trigger PNO and verify the connection after PNO.
 
         Args:
             ad: Android Device to trigger PNO on.
             attn_val_name: Name of the attenuation value pair to use.
             expected_con: The expected info of the network to we expect the DUT
-                to roam to.
+                to connect to.
         """
         connection_info = ad.droid.wifiGetConnectionInfo()
-        ad.log.info("Triggering PNO connect from %s to %s",
-                      connection_info[WifiEnums.SSID_KEY],
-                      expected_con[WifiEnums.SSID_KEY])
+
+        # Stops APs to force DUT to disconnect and restart APs.
+        for i in range(len(self.user_params["OpenWrtAP"])):
+            self.openwrt = self.access_points[i]
+            self.openwrt.stop_ap()
+
+        wutils.wait_for_disconnect(self.dut,
+                                   timeout=WAIT_WIFI_DISCONNECT_SEC)
+
+        for i in range(len(self.user_params["OpenWrtAP"])):
+            self.openwrt = self.access_points[i]
+            self.openwrt.start_ap()
+
         self.set_attns(attn_val_name)
-        ad.log.info("Wait %ss for triggering PNO.", self.pno_interval)
+
+        ad.log.info("Wait %ss for triggering PNO scan, connect from %s to %s.",
+                    self.pno_interval,
+                    connection_info[WifiEnums.SSID_KEY],
+                    expected_con[WifiEnums.SSID_KEY])
         time.sleep(self.pno_interval)
+
         try:
             ad.log.info("Expect it's connected to %s after PNO interval"
-                          % ad.droid.wifiGetConnectionInfo())
+                        % ad.droid.wifiGetConnectionInfo()[WifiEnums.SSID_KEY])
             expected_ssid = expected_con[WifiEnums.SSID_KEY]
             verify_con = {WifiEnums.SSID_KEY: expected_ssid}
             wutils.verify_wifi_connection_info(ad, verify_con)
@@ -164,12 +179,14 @@ class WifiPnoTest(WifiBaseTest):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
-        1. Switch off the screen on the device.
-        2. Save 2 valid network configurations (a & b) in the device.
-        3. Attenuate 5Ghz network and wait for a few seconds to trigger PNO.
-        4. Check the device connected to 2Ghz network automatically.
+        1. Puts the DUT to sleep.
+        2. DUT connects to a 2G(a) DUT and a 5G(b) network so they will be
+           saved network and won't be excluded from PNO scan.
+        3. Stops APs to force DUT to disconnect and restart APs.
+        4. Attenuates to (2G in range, 5G out of range).
+        5. Waits for 120 seconds PNO interval.
+        6. Checks the device connected to 2G network automatically.
         """
-        # DUT connects to the saved networks so they won't be excluded from PNO scan.
         wutils.connect_to_wifi_network(self.dut, self.pno_network_a)
         wutils.connect_to_wifi_network(self.dut, self.pno_network_b)
         self.trigger_pno_and_assert_connect(self.dut,
@@ -181,10 +198,13 @@ class WifiPnoTest(WifiBaseTest):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
-        1. Switch off the screen on the device.
-        2. Save 2 valid network configurations (a & b) in the device.
-        3. Attenuate 2Ghz network and wait for a few seconds to trigger PNO.
-        4. Check the device connected to 5Ghz network automatically.
+        1. Puts the DUT to sleep.
+        2. DUT connects to a 5G(b) DUT and a 2G(a) network so they will be
+           saved network and won't be excluded from PNO scan.
+        3. Stops APs to force DUT to disconnect  from WiFi and restart APs.
+        4. Attenuates to (5G in range, 2G out of range).
+        5. Waits for 120 seconds PNO interval.
+        6. Checks the device connected to 5G network automatically.
         """
         # DUT connects to the saved networks so they won't be excluded from PNO scan.
         wutils.connect_to_wifi_network(self.dut, self.pno_network_b)
@@ -195,17 +215,25 @@ class WifiPnoTest(WifiBaseTest):
 
     @test_tracker_info(uuid="844b15be-ff45-4b09-a11b-0b2b4bb13b22")
     def test_pno_connection_with_multiple_saved_networks(self):
-        """Test PNO triggered autoconnect to a network when there are more
+        """Test autoconnect with multiple saved networks after PNO.
+
+        Test PNO triggered autoconnect to a network when there are more
         than 16 networks saved in the device.
 
-        16 is the max list size of PNO watch list for most devices. The device should automatically
-        pick the 16 most recently connected networks. For networks that were never connected, the
-        networks seen in the previous scan result would have higher priority.
+        16 is the max list size of PNO watch list for most devices. The device
+        should automatically pick the 16 most recently connected networks.
+        For networks that were never connected, the networks seen in the
+        previous scan result would have higher priority.
 
         Steps:
-        1. Save 16 test network configurations in the device.
-        2. Add 2 connectable networks and do a normal scan.
-        3. Trigger PNO scan.
+        1. Puts the DUt to sleep.
+        2. Saves 16 test network configurations in the device.
+        3. DUT connects to a 5G(b) DUT and a 2G(a) network so they will be
+           saved network and won't be excluded from PNO scan.
+        4. Stops APs to force DUT to disconnect  from WiFi and restart APs.
+        5. Attenuates to (5G in range, 2G out of range).
+        6. Waits for 120 seconds PNO interval.
+        7. Checks the device connected to 5G network automatically.
         """
         self.add_and_enable_test_networks(16)
         # DUT connects to the saved networks so they won't be excluded from PNO scan.
