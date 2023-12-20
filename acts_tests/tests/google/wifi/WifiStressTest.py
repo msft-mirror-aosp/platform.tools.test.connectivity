@@ -230,6 +230,8 @@ class WifiStressTest(WifiBaseTest):
                       connection_info[WifiEnums.SSID_KEY],
                       expected_con[WifiEnums.SSID_KEY])
         else:
+            logging.info("Move the DUT in WiFi range.")
+            self.attenuators[0].set_atten(MIN_ATTN)
             # force start a single scan so we don't have to wait for the scheduled scan.
             wutils.start_wifi_connection_scan_and_return_status(self.dut)
             self.log.info("Wait 60s for network selection.")
@@ -591,7 +593,7 @@ class WifiStressTest(WifiBaseTest):
         for count in range(self.stress_count):
             self.connect_and_verify_connected_ssid(
                 self.reference_networks[0]['2g'])
-            # move the DUT out of range
+            logging.info("Move the DUT out of WiFi range and wait 10 seconds.")
             self.attenuators[0].set_atten(95)
             time.sleep(10)
         wutils.set_attns(self.attenuators, "default")
