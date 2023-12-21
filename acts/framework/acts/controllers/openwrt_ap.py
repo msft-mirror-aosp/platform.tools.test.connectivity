@@ -181,6 +181,7 @@ class OpenWrtAP(object):
 
   def start_ap(self):
     """Starts the AP with the settings in /etc/config/wireless."""
+    self.log.info("wifi up")
     self.ssh.run("wifi up")
     curr_time = time.time()
     while time.time() < curr_time + WAIT_TIME:
@@ -192,6 +193,7 @@ class OpenWrtAP(object):
 
   def stop_ap(self):
     """Stops the AP."""
+    self.log.info("wifi down")
     self.ssh.run("wifi down")
     curr_time = time.time()
     while time.time() < curr_time + WAIT_TIME:
