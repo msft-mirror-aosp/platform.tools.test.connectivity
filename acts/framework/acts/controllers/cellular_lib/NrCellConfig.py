@@ -40,6 +40,7 @@ class NrCellConfig(base_cell.BaseCellConfig):
     PARAM_UL_RBS = "ul_rbs"
     PARAM_TA = "tracking_area"
     PARAM_DRX = "drx"
+
     PARAM_DISABLE_ALL_UL_SLOTS = "disable_all_ul_slots"
     PARAM_CONFIG_FLEXIBLE_SLOTS = "config_flexible_slots"
 
@@ -62,6 +63,15 @@ class NrCellConfig(base_cell.BaseCellConfig):
         self.drx_connected_mode = None
         self.disable_all_ul_slots = None
         self.config_flexible_slots = None
+        self.drx_on_duration_timer = None
+        self.drx_inactivity_timer = None
+        self.drx_retransmission_timer_dl = None
+        self.drx_retransmission_timer_ul = None
+        self.drx_long_cycle = None
+        self.harq_rtt_timer_dl = 0
+        self.harq_rtt_timer_ul = 0
+        self.slot_offset = 0
+
 
     def configure(self, parameters):
         """ Configures an NR cell using a dictionary of parameters.
@@ -151,6 +161,62 @@ class NrCellConfig(base_cell.BaseCellConfig):
             self.PARAM_DISABLE_ALL_UL_SLOTS, False)
         self.config_flexible_slots = parameters.get(
             self.PARAM_CONFIG_FLEXIBLE_SLOTS, False)
+
+        if self.PARAM_DRX in parameters and len(
+                parameters[self.PARAM_DRX]) >= 6:
+            self.drx_connected_mode = True
+            param_drx = parameters[self.PARAM_DRX]
+            self.drx_on_duration_timer = param_drx[0]
+            self.drx_inactivity_timer = param_drx[1]
+            self.drx_retransmission_timer_dl = param_drx[2]
+            self.drx_retransmission_timer_ul = param_drx[3]
+            self.drx_long_cycle = param_drx[4]
+            try:
+                long_cycle = int(param_drx[4])
+                long_cycle_offset = int(param_drx[5])
+                if long_cycle_offset in range(0, long_cycle):
+                    self.drx_long_cycle_offset = long_cycle_offset
+                else:
+                    self.log.error(
+                        ("The cDRX long cycle offset must be in the "
+                         "range 0 to (long cycle  - 1). Setting "
+                         "long cycle offset to 0"))
+                    self.drx_long_cycle_offset = 0
+
+                self.harq_rtt_timer_dl = (
+                    int(param_drx[6])
+                    if len(param_drx) >= 7
+                    else 0
+                )
+                self.harq_rtt_timer_ul = (
+                    int(param_drx[7])
+                    if len(param_drx) >= 8
+                    else 0
+                )
+                self.slot_offset = (
+                    int(param_drx[8])
+                    if len(param_drx) >= 9
+                    else 0
+                )
+
+            except ValueError:
+                self.log.error(("cDRX long cycle and long cycle offset "
+                                "must be integers. Disabling cDRX mode."))
+                self.drx_connected_mode = False
+        else:
+            self.log.warning(
+                 "DRX mode was not configured properly.\n"
+                 "Please provide a list with the following values:\n"
+                 "1) DRX on duration timer\n"
+                 "2) Inactivity timer\n"
+                 "3) Retransmission timer dl\n"
+                 "4) Retransmission timer ul\n"
+                 "5) Long DRX cycle duration\n"
+                 "6) Long DRX cycle offset\n"
+                 "7) harq RTT timer dl\n"
+                 "8) harq RTT timer ul\n"
+                 "9) slot offset\n"
+                 "Example: [2, 6, 1, 1, 160, 0, 0, 0, 0].")
 
     def __str__(self):
         return str(vars(self))
