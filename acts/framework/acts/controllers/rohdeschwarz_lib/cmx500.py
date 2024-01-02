@@ -1397,7 +1397,75 @@ class NrBaseStation(BaseStation):
 
         config: The NrCellConfig for current base station.
         """
-        logger.warning('Not implement yet')
+        logger.info(
+            f'Configure Nr drx with\n'
+            f'drx_on_duration_timer: {config.drx_on_duration_timer}\n'
+            f'drx_inactivity_timer: {config.drx_inactivity_timer}\n'
+            f'drx_retransmission_timer_dl: {config.drx_retransmission_timer_dl}\n'
+            f'drx_retransmission_timer_ul: {config.drx_retransmission_timer_ul}\n'
+            f'drx_long_cycle: {config.drx_long_cycle}\n'
+            f'drx_long_cycle_offset: {config.drx_long_cycle_offset}\n'
+            f'harq_rtt_timer_dl: {config.harq_rtt_timer_dl}\n'
+            f'harq_rtt_timer_ul: {config.harq_rtt_timer_ul}\n'
+            f'slot_offset: {config.slot_offset}\n'
+        )
+
+        from mrtype.nr.drx import (
+            NrDrxConfig,
+            NrDrxInactivityTimer,
+            NrDrxOnDurationTimer,
+            NrDrxRetransmissionTimer,
+            NrDrxHarqRttTimer,
+            NrDrxSlotOffset,
+        )
+
+        from mrtype.nr.drx import NrDrxLongCycleStartOffset as longCycle
+
+        long_cycle_mapping = {
+            10: longCycle.ms10, 20: longCycle.ms20, 32: longCycle.ms32,
+            40: longCycle.ms40, 60: longCycle.ms60, 64: longCycle.ms64,
+            70: longCycle.ms70, 80: longCycle.ms80, 128: longCycle.ms128,
+            160: longCycle.ms160, 256: longCycle.ms256, 320: longCycle.ms320,
+            512: longCycle.ms512, 640: longCycle.ms640, 1024: longCycle.ms1024,
+            1280: longCycle.ms1280, 2048: longCycle.ms2048,
+            2560: longCycle.ms2560,
+        }
+
+        drx_on_duration_timer = NrDrxOnDurationTimer(
+            int(config.drx_on_duration_timer)
+        )
+        drx_inactivity_timer = NrDrxInactivityTimer(
+            int(config.drx_inactivity_timer)
+        )
+        drx_retransmission_timer_dl = NrDrxRetransmissionTimer(
+            int(config.drx_retransmission_timer_dl)
+        )
+        drx_retransmission_timer_ul = NrDrxRetransmissionTimer(
+            int(config.drx_retransmission_timer_ul)
+        )
+        drx_long_cycle = long_cycle_mapping[int(config.drx_long_cycle)]
+        drx_long_cycle_offset = drx_long_cycle(
+            int(config.drx_long_cycle_offset)
+        )
+        harq_rtt_timer_dl = NrDrxHarqRttTimer(config.harq_rtt_timer_dl)
+        harq_rtt_timer_ul = NrDrxHarqRttTimer(config.harq_rtt_timer_ul)
+        slot_offset=NrDrxSlotOffset(config.slot_offset)
+
+        nr_drx_config = NrDrxConfig(
+            on_duration_timer=drx_on_duration_timer,
+            inactivity_timer=drx_inactivity_timer,
+            retransmission_timer_dl=drx_retransmission_timer_dl,
+            retransmission_timer_ul=drx_retransmission_timer_ul,
+            long_cycle_start_offset=drx_long_cycle_offset,
+            harq_rtt_timer_dl=harq_rtt_timer_dl,
+            harq_rtt_timer_ul=harq_rtt_timer_ul,
+            slot_offset=slot_offset,
+        )
+
+        self._cmx.dut.nr_cell_group().set_drx_and_adjust_scheduler(
+            nr_drx_config
+        )
+        self._network.apply_changes()
 
     def set_dl_channel(self, channel):
         """Sets the downlink channel number of cell.
