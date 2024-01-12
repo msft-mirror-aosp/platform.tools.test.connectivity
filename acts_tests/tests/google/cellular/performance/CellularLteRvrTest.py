@@ -24,14 +24,15 @@ import os
 from acts import context
 from acts import base_test
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
+from acts_contrib.test_utils.cellular.performance import cellular_performance_test_utils as cputils
+from acts_contrib.test_utils.cellular.performance.CellularThroughputBaseTest import CellularThroughputBaseTest
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
-from CellularLtePlusFr1PeakThroughputTest import CellularLteSingleCellPeakThroughputTest
 
 from functools import partial
 
 
-class CellularLteRvrTest(CellularLteSingleCellPeakThroughputTest):
+class CellularLteRvrTest(CellularThroughputBaseTest):
     """Class to test single cell LTE sensitivity"""
 
     def __init__(self, controllers):
@@ -194,7 +195,7 @@ class CellularLteRvrTest(CellularLteSingleCellPeakThroughputTest):
             for test_config in test_configs:
                 if int(test_config['skip_test']):
                     continue
-                endc_combo_config = self.generate_endc_combo_config(
+                endc_combo_config = cputils.generate_endc_combo_config_from_csv_row(
                     test_config)
                 test_name = 'test_lte_B{}_dl_{}'.format(
                     test_config['lte_band'], lte_dl_mcs_table)
