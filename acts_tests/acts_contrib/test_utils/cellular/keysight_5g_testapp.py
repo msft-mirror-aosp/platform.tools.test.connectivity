@@ -16,13 +16,16 @@
 
 import collections
 import itertools
+
 import pyvisa
 import time
 from acts import logger
+from acts import asserts as acts_asserts
 from acts_contrib.test_utils.cellular.performance import cellular_performance_test_utils as cputils
 
 SHORT_SLEEP = 1
 VERY_SHORT_SLEEP = 0.1
+MEDIUM_SLEEP = 5
 SUBFRAME_DURATION = 0.001
 VISA_QUERY_DELAY = 0.01
 
@@ -129,11 +132,19 @@ class Keysight5GTestApp(object):
                     if 'No error' not in error:
                         self.log.warning("Command: {}. Error: {}".format(
                             command, error))
-                self.send_cmd('*OPC?', 1)
+                self.send_cmd('*OPC?', 1, check_errors)
                 time.sleep(VISA_QUERY_DELAY)
             except:
                 raise RuntimeError('Lost connection to test app.')
             return None
+
+    def check_error(self):
+        error = self.test_app.query('SYSTem:ERRor?')
+        if 'No error' not in error:
+            self.log.warning("Error: {}".format(error))
+            return True
+        else:
+            return False
 
     def import_scpi_file(self, file_name, check_last_loaded=0):
         """Function to import SCPI file specified in file_name.
@@ -438,11 +449,12 @@ class Keysight5GTestApp(object):
                      or subcarrier
         """
         if full_bw:
-            self.send_cmd('BSE:CONFIG:{}:{}:DL:POWer:CHANnel {}'.format(
+            self.send_cmd('BSE:CONFig:{}:{}:DL:POWer:CHANnel {}'.format(
                 cell_type, Keysight5GTestApp._format_cells(cell), power))
         else:
-            self.send_cmd('BSE:CONFIG:{}:{}:DL:POWer:EPRE {}'.format(
+            self.send_cmd('BSE:CONFig:{}:{}:DL:POWer:EPRE {}'.format(
                 cell_type, Keysight5GTestApp._format_cells(cell), power))
+        time.sleep(VERY_SHORT_SLEEP)
         self.send_cmd('BSE:CONFig:{}:APPLY'.format(cell_type))
 
     def set_cell_ul_power_control(self, cell_type, cell, mode, target_power=0):
@@ -475,8 +487,22 @@ class Keysight5GTestApp(object):
             cell: cell/carrier number
             power: expected input power
         """
-        self.send_cmd('BSE:CONFIG:{}:{}:MANual:POWer {}'.format(
-            cell_type, Keysight5GTestApp._format_cells(cell), power))
+        if power == "AUTO" and cell_type == "LTE":
+            self.send_cmd('BSE:CONFig:{}:{}:CONTrol:POWer:AUTO ON'.format(
+                cell_type, Keysight5GTestApp._format_cells(cell)))
+        elif cell_type == "LTE":
+            self.send_cmd('BSE:CONFig:{}:{}:CONTrol:POWer:AUTO OFF'.format(
+                cell_type, Keysight5GTestApp._format_cells(cell)))
+            self.send_cmd('BSE:CONFig:{}:{}:MANual:POWer {}'.format(
+                cell_type, Keysight5GTestApp._format_cells(cell), power))
+        if power == "AUTO" and cell_type == "NR5G":
+            self.send_cmd('BSE:CONFig:{}:UL:EIP:AUTO ON'.format(
+                cell_type))
+        elif cell_type == "NR5G":
+            self.send_cmd('BSE:CONFig:{}:UL:EIP:AUTO OFF'.format(
+                cell_type))
+            self.send_cmd('BSE:CONFig:{}:{}:MANual:POWer {}'.format(
+                cell_type, Keysight5GTestApp._format_cells(cell), power))
         self.send_cmd('BSE:CONFig:{}:APPLY'.format(cell_type))
 
     def set_cell_duplex_mode(self, cell_type, cell, duplex_mode):
@@ -700,11 +726,16 @@ class Keysight5GTestApp(object):
 
     def apply_carrier_agg(self):
         """Function to start carrier aggregation on already configured cells"""
-        if self.wait_for_cell_status('LTE', 'CELL1', 'CONN', 60):
-            self.send_cmd(
-                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:APPly')
-        else:
+        if not self.wait_for_cell_status('LTE', 'CELL1', 'CONN', 60):
             raise RuntimeError('LTE must be connected to start aggregation.')
+        # Continue if LTE connected
+        self.send_cmd(
+            'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:APPly', 0, 0)
+        time.sleep(MEDIUM_SLEEP)
+        error = self.check_error()
+        if error:
+            acts_asserts.fail('Failed to apply NR carrier aggregation.')
+
 
     def get_ip_throughput(self, cell_type):
         """Function to query IP layer throughput on LTE or NR
@@ -728,8 +759,8 @@ class Keysight5GTestApp(object):
         """Helper function to get PHY layer throughput on single cell"""
         if cell_type == 'LTE':
             tput_response = self.send_cmd(
-                'BSE:MEASure:LTE:{}:BTHRoughput:{}:THRoughput:OTA:{}?'.format(
-                    Keysight5GTestApp._format_cells(cell), link,
+                'BSE:MEASure:LTE:BTHRoughput:{}:THRoughput:OTA:{}?'.format(
+                    link,
                     Keysight5GTestApp._format_cells(cell)), 1)
         elif cell_type == 'NR5G':
             # Tester reply format
@@ -747,7 +778,7 @@ class Keysight5GTestApp(object):
         }
         return tput_result
 
-    def get_throughput(self, cell_type, cells):
+    def get_throughput(self, cell_type, dl_cells, ul_cells):
         """Function to get PHY layer throughput on on or more cells
 
         This function returns the throughput data on the requested cells
@@ -760,15 +791,18 @@ class Keysight5GTestApp(object):
         Returns:
             tput_result: dict containing all throughput statistics in Mbps
         """
-        if not isinstance(cells, list):
-            cells = [cells]
+        if not isinstance(dl_cells, list):
+            dl_cells = [dl_cells]
+        if not isinstance(ul_cells, list):
+            ul_cells = [ul_cells]
         tput_result = collections.OrderedDict()
-        for cell in cells:
-            tput_result[cell] = {
-                'DL': self._get_throughput(cell_type, 'DL', cell),
-                'UL': self._get_throughput(cell_type, 'UL', cell)
-            }
+        for cell in dl_cells:
+            tput_result.setdefault(cell, {})
+            tput_result[cell]['DL'] = self._get_throughput(cell_type, 'DL', cell)
             frame_count = tput_result[cell]['DL']['frame_count']
+        for cell in ul_cells:
+            tput_result.setdefault(cell, {})
+            tput_result[cell]['UL'] = self._get_throughput(cell_type, 'UL', cell)
         agg_tput = {
             'DL': {
                 'frame_count': frame_count,
@@ -841,33 +875,35 @@ class Keysight5GTestApp(object):
         self._configure_bler_measurement(cell_type, 0, length)
         self._set_bler_measurement_state(cell_type, 1)
         time.sleep(0.1)
-        bler_check = self.get_bler_result(cell_type, cells, length, 0)
-        if bler_check['total']['DL']['frame_count'] == 0:
-            self.log.warning('BLER measurement did not start. Retrying')
-            self.start_bler_measurement(cell_type, cells, length)
+        #bler_check = self.get_bler_result(cell_type, cells, length, 0)
+        #if bler_check['total']['DL']['frame_count'] == 0:
+        #    self.log.warning('BLER measurement did not start. Retrying')
+        #    self.start_bler_measurement(cell_type, cells, length)
 
     def _get_bler(self, cell_type, link, cell):
         """Helper function to get single-cell BLER measurement results."""
         if cell_type == 'LTE':
             bler_response = self.send_cmd(
-                'BSE:MEASure:LTE:CELL1:BTHRoughput:{}:BLER:CELL1?'.format(
-                    link), 1)
+                'BSE:MEASure:LTE:BTHRoughput:{}:BLER:{}?'.format(
+                    link, Keysight5GTestApp._format_cells(cell)), 1)
+            bler_items = ['frame_count','ack_count','ack_ratio','nack_count','nack_ratio',
+                           'statDtx_count','statDtx_ratio','nackStatDtx_count','nackStatDtx_ratio',
+                           'pdschBler_count','pdschBler_ratio','any_count','any_ratio']
+            bler_result = {bler_items[x] : bler_response[x] for x in range(len(bler_response))}
         elif cell_type == 'NR5G':
             bler_response = self.send_cmd(
                 'BSE:MEASure:NR5G:BTHRoughput:{}:BLER:{}?'.format(
                     link, Keysight5GTestApp._format_cells(cell)), 1)
-        bler_result = {
-            'frame_count': bler_response[0],
-            'ack_count': bler_response[1],
-            'ack_ratio': bler_response[2],
-            'nack_count': bler_response[3],
-            'nack_ratio': bler_response[4]
-        }
+            bler_items = ['frame_count','ack_count','ack_ratio','nack_count','nack_ratio',
+                           'statDtx_count','statDtx_ratio', 'pdschBler_count','pdschBler_ratio','pdschTputRatio']
+
+            bler_result = {bler_items[x]: bler_response[x] for x in range(len(bler_response))}
         return bler_result
 
     def get_bler_result(self,
                         cell_type,
-                        cells,
+                        dl_cells,
+                        ul_cells,
                         length,
                         wait_for_length=1,
                         polling_interval=SHORT_SLEEP):
@@ -888,22 +924,24 @@ class Keysight5GTestApp(object):
         Returns:
             bler_result: dict containing per-cell and aggregate BLER results
         """
-
-        if not isinstance(cells, list):
-            cells = [cells]
+        if not isinstance(dl_cells, list):
+            dl_cells = [dl_cells]
+        if not isinstance(ul_cells, list):
+            ul_cells = [ul_cells]
         while wait_for_length:
-            dl_bler = self._get_bler(cell_type, 'DL', cells[0])
+            dl_bler = self._get_bler(cell_type, 'DL', dl_cells[0])
             if dl_bler['frame_count'] < length:
                 time.sleep(polling_interval)
             else:
                 break
 
         bler_result = collections.OrderedDict()
-        for cell in cells:
-            bler_result[cell] = {
-                'DL': self._get_bler(cell_type, 'DL', cell),
-                'UL': self._get_bler(cell_type, 'UL', cell)
-            }
+        for cell in dl_cells:
+            bler_result.setdefault(cell, {})
+            bler_result[cell]['DL'] = self._get_bler(cell_type, 'DL', cell)
+        for cell in ul_cells:
+            bler_result.setdefault(cell, {})
+            bler_result[cell]['UL'] = self._get_bler(cell_type, 'UL', cell)
         agg_bler = {
             'DL': {
                 'frame_count': length,
