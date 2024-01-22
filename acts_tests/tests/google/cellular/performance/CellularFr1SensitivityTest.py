@@ -148,7 +148,6 @@ class CellularFr1SensitivityTest(CellularThroughputBaseTest):
             return
         testcase_data = self.testclass_results[self.current_test_name]
 
-
         bler_list = []
         average_throughput_list = []
         theoretical_throughput_list = []

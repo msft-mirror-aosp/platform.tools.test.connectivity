@@ -4,10 +4,8 @@
 import pyvisa
 import time
 from acts import logger
-from ota_chamber import Chamber
 
-
-class Chamber(Chamber):
+class KeysightChamber(object):
     """Base class implementation for signal generators.
 
     Base class provides functions whose implementation is shared by all
@@ -15,14 +13,15 @@ class Chamber(Chamber):
     """
     CHAMBER_SLEEP = 10
 
+    VISA_LOCATION = '/opt/keysight/iolibs/libktvisa32.so'
+
     def __init__(self, config):
         self.config = config
         self.log = logger.create_tagged_trace_logger("{}{}".format(
             self.config['brand'], self.config['model']))
-        self.chamber_resource = pyvisa.ResourceManager()
+        self.chamber_resource = pyvisa.ResourceManager(self.VISA_LOCATION)
         self.chamber_inst = self.chamber_resource.open_resource(
-            '{}::{}::{}::INSTR'.format(self.config['network_id'],
-                                       self.config['ip_address'],
+            'TCPIP0::{}::{}::INSTR'.format(self.config['ip_address'],
                                        self.config['hislip_interface']))
         self.chamber_inst.timeout = 200000
         self.chamber_inst.write_termination = '\n'
@@ -41,6 +40,7 @@ class Chamber(Chamber):
             self.log.warning(
                 'Reset home set to false. Assumed [0,0]. Chamber angles may not be as expected.'
             )
+        self.preset_orientations = self.config['preset_orientations']
 
     def id_check(self, config):
         """ Checks Chamber ID."""
@@ -85,6 +85,10 @@ class Chamber(Chamber):
     def move_theta_abs(self, theta):
         self.log.info("Moving to Theta={}".format(theta))
         self.move_to_azim_roll(self.current_azim, theta)
+
+    def move_theta_phi_abs(self, theta, phi):
+        self.log.info("Moving to Theta={}, Phi={}".format(theta, phi))
+        self.move_to_azim_roll(phi, theta)
 
     def move_theta_phi_abs(self, theta, phi):
         self.log.info("Moving chamber to [{}, {}]".format(theta, phi))
@@ -159,7 +163,6 @@ class Chamber(Chamber):
         self.chamber_inst.write("POS:SWE:CONT 1")
 
     def sweep_init(self):
-
         def query_float_list(inst, scpi):
             resp = inst.query(scpi)
             return list(map(float, resp.split(',')))
@@ -171,11 +174,3 @@ class Chamber(Chamber):
         phis = query_float_list(self.chamber_inst, "FETC:DUT:PHI?")
         thetas = query_float_list(self.chamber_inst, "FETC:DUT:THET?")
         return zip(azims, rolls, phis, thetas)
-
-    def configure_positioner(self, pos_name, pos_visa_addr):
-        select = "True"
-        simulate = "False"
-        options = ""
-        data = f"'{pos_name}~{select}~{simulate}~{pos_visa_addr}~{options}'"
-        self.chamber_inst.write(f"EQU:CONF {data}")
-        self.chamber_inst.write("EQU:UPD")
