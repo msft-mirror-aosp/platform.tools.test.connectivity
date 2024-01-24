@@ -35,22 +35,22 @@ CONCURRENCY_TYPE = {
 }
 
 GPS_XML_CONFIG = {
-    "CS": [
-        '    IgnorePosition=\"true\"\n', '    IgnoreEph=\"true\"\n',
-        '    IgnoreTime=\"true\"\n', '    AsstIgnoreLto=\"true\"\n',
-        '    IgnoreJniTime=\"true\"\n'
-    ],
-    "WS": [
-        '    IgnorePosition=\"true\"\n', '    AsstIgnoreLto=\"true\"\n',
-        '    IgnoreJniTime=\"true\"\n'
-    ],
-    "HS": []
+    "CS": {
+        'IgnorePosition': 'true', 'IgnoreEph': 'true',
+        'IgnoreTime': 'true', 'AsstIgnoreLto': 'true',
+        'IgnoreJniTime': 'true',
+    },
+    "WS": {
+        'IgnorePosition': 'true', 'AsstIgnoreLto': 'true',
+        'IgnoreJniTime': 'true',
+    },
+    "HS": {}
 }
 
-ONCHIP_CONFIG = [
-    '    EnableOnChipStopNotification=\"1\"\n',
-    '    EnableOnChipStopNotification=\"2\"\n'
-]
+ONCHIP_CONFIG = {
+    "enable": {"EnableOnChipStopNotification": "1"},
+    "disable": {"EnableOnChipStopNotification": "2"},
+}
 
 
 class GnssConcurrencyTest(BaseTestClass):
@@ -251,6 +251,7 @@ class GnssConcurrencyTest(BaseTestClass):
                     request_type, len(outliers[request_type]))
 
         if failure_log:
+            failure_log += f"The test begins at {begin_time}\n"
             raise signals.TestFailure(failure_log)
 
     def run_engine_switching_test(self, freq):
@@ -325,12 +326,10 @@ class GnssConcurrencyTest(BaseTestClass):
         Args:
             conf_type: a string identify the config type
         """
-        search_line_tag = "<gll\n"
-        append_line_str = GPS_XML_CONFIG[conf_type]
-        gutils.bcm_gps_xml_update_option(self.ad, "add", search_line_tag,
-                                         append_line_str)
+        gutils.bcm_gps_xml_update_option(
+            self.ad, child_tag="gll", items_to_update=GPS_XML_CONFIG[conf_type])
 
-    def update_gps_conf(self, search_line, update_line):
+    def update_gps_conf(self, update_attrib):
         """ Update gps.xml content
 
         Args:
@@ -338,7 +337,7 @@ class GnssConcurrencyTest(BaseTestClass):
             update_line: update content
         """
         gutils.bcm_gps_xml_update_option(
-            self.ad, "update", search_line, update_txt=update_line)
+            self.ad, child_tag="gll", items_to_update=update_attrib)
 
     def delete_gps_conf(self, conf_type):
         """ Delete gps.xml content
@@ -346,9 +345,8 @@ class GnssConcurrencyTest(BaseTestClass):
         Args:
             conf_type: a string identify the config type
         """
-        search_line_tag = GPS_XML_CONFIG[conf_type]
         gutils.bcm_gps_xml_update_option(
-            self.ad, "delete", delete_txt=search_line_tag)
+            self.ad, child_tag="gll", items_to_delete=GPS_XML_CONFIG[conf_type].keys())
 
     def preset_mcu_test(self, mode):
         """ Preseting mcu test with config and device state
@@ -359,7 +357,7 @@ class GnssConcurrencyTest(BaseTestClass):
         self.add_ttff_conf(mode)
         gutils.push_lhd_overlay(self.ad)
         toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
-        self.update_gps_conf(ONCHIP_CONFIG[1], ONCHIP_CONFIG[0])
+        self.update_gps_conf(ONCHIP_CONFIG["enable"])
         gutils.clear_aiding_data_by_gtw_gpstool(self.ad)
         self.ad.reboot(self.ad)
         self.load_chre_nanoapp()
@@ -371,7 +369,7 @@ class GnssConcurrencyTest(BaseTestClass):
             mode: a string identify the test type
         """
         self.delete_gps_conf(mode)
-        self.update_gps_conf(ONCHIP_CONFIG[0], ONCHIP_CONFIG[1])
+        self.update_gps_conf(ONCHIP_CONFIG["disable"])
 
     def get_mcu_ttff(self):
         """ Get mcu ttff seconds

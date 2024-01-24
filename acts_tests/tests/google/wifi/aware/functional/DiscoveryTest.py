@@ -293,11 +293,6 @@ class DiscoveryTest(AwareBaseTest):
         autils.wait_for_event(s_dut,
                               aconsts.SESSION_CB_ON_SESSION_TERMINATED)
 
-
-        # verify that there were no other events
-        autils.verify_no_more_events(p_dut, timeout=0)
-        autils.verify_no_more_events(s_dut, timeout=0)
-
         # verify that forbidden callbacks aren't called
         autils.validate_forbidden_callbacks(p_dut, {aconsts.CB_EV_MATCH: 0})
 

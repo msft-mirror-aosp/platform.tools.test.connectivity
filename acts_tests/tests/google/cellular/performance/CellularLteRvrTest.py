@@ -31,7 +31,7 @@ from CellularLtePlusFr1PeakThroughputTest import CellularLteSingleCellPeakThroug
 from functools import partial
 
 
-class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
+class CellularLteRvrTest(CellularLteSingleCellPeakThroughputTest):
     """Class to test single cell LTE sensitivity"""
 
     def __init__(self, controllers):
@@ -42,9 +42,7 @@ class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
             BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
         self.testclass_params = self.user_params['lte_sensitivity_test_params']
-        self.tests = self.generate_test_cases(dl_mcs_list=list(
-            numpy.arange(27, -1, -1)),
-                                              lte_dl_mcs_table='QAM256',
+        self.tests = self.generate_test_cases(lte_dl_mcs_table='QAM256',
                                               lte_ul_mcs_table='QAM256',
                                               lte_ul_mcs=4,
                                               transform_precoding=0)
@@ -141,90 +139,69 @@ class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
         cell_power_list = testcase_data['testcase_params']['cell_power_sweep'][
             0]
         for result in testcase_data['results']:
-            bler_list.append(result['throughput_measurements']
-                             ['lte_bler_result']['total']['DL']['nack_ratio'])
+            bler_list.append(
+                result['throughput_measurements']['lte_bler_result']['total']['DL']['nack_ratio'])
             average_throughput_list.append(
-                result['throughput_measurements']['lte_tput_result']['total']
-                ['DL']['average_tput'])
+                result['throughput_measurements']['lte_tput_result']['total']['DL']['average_tput'])
             theoretical_throughput_list.append(
-                result['throughput_measurements']['lte_tput_result']['total']
-                ['DL']['theoretical_tput'])
+                result['throughput_measurements']['lte_tput_result']['total']['DL']['theoretical_tput'])
         padding_len = len(cell_power_list) - len(average_throughput_list)
         average_throughput_list.extend([0] * padding_len)
         theoretical_throughput_list.extend([0] * padding_len)
-
-        bler_above_threshold = [
-            bler > self.testclass_params['bler_threshold']
-            for bler in bler_list
-        ]
-        for idx in range(len(bler_above_threshold)):
-            if all(bler_above_threshold[idx:]):
-                sensitivity_idx = max(idx, 1) - 1
-                break
-        else:
-            sensitivity_idx = -1
-        sensitivity = cell_power_list[sensitivity_idx]
-        self.log.info('LTE Band {} Table {} MCS {} Sensitivity = {}dBm'.format(
-            testcase_data['testcase_params']['endc_combo_config']['cell_list']
-            [0]['band'], testcase_data['testcase_params']['lte_dl_mcs_table'],
-            testcase_data['testcase_params']['lte_dl_mcs'], sensitivity))
 
         testcase_data['bler_list'] = bler_list
         testcase_data['average_throughput_list'] = average_throughput_list
         testcase_data[
             'theoretical_throughput_list'] = theoretical_throughput_list
         testcase_data['cell_power_list'] = cell_power_list
-        testcase_data['sensitivity'] = sensitivity
+
+        plot = BokehFigure(
+            title='Band {} - RvR'.format(testcase_data['testcase_params']['endc_combo_config']['cell_list'][0]['band']),
+            x_label='Cell Power (dBm)',
+            primary_y_label='PHY Rate (Mbps)')
+
+        plot.add_line(
+            testcase_data['cell_power_list'],
+            testcase_data['average_throughput_list'],
+            'Average Throughput',
+            width=1)
+        plot.add_line(
+            testcase_data['cell_power_list'],
+            testcase_data['theoretical_throughput_list'],
+            'Average Throughput',
+            width=1,
+            style='dashed')
+        plot.generate_figure()
+        output_file_path = os.path.join(self.log_path, '{}.html'.format(self.current_test_name))
+        BokehFigure.save_figure(plot, output_file_path)
 
     def get_per_cell_power_sweeps(self, testcase_params):
-        # get reference test
-        current_band = testcase_params['endc_combo_config']['cell_list'][0][
-            'band']
-        reference_test = None
-        reference_sensitivity = None
-        for testcase_name, testcase_data in self.testclass_results.items():
-            if testcase_data['testcase_params']['endc_combo_config'][
-                    'cell_list'][0]['band'] == current_band:
-                reference_test = testcase_name
-                reference_sensitivity = testcase_data['sensitivity']
-        if reference_test and reference_sensitivity and not self.retry_flag:
-            start_atten = reference_sensitivity + self.testclass_params[
-                'adjacent_mcs_gap']
-            self.log.info(
-                "Reference test {} found. Sensitivity {} dBm. Starting at {} dBm"
-                .format(reference_test, reference_sensitivity, start_atten))
-        else:
-            start_atten = self.testclass_params['lte_cell_power_start']
-            self.log.info(
-                "Reference test not found. Starting at {} dBm".format(
-                    start_atten))
         # get current cell power start
         cell_power_sweeps = [
             list(
-                numpy.arange(start_atten,
+                numpy.arange(self.testclass_params['lte_cell_power_start'],
                              self.testclass_params['lte_cell_power_stop'],
                              self.testclass_params['lte_cell_power_step']))
         ]
         return cell_power_sweeps
 
-    def generate_test_cases(self, dl_mcs_list, lte_dl_mcs_table,
+    def generate_test_cases(self, lte_dl_mcs_table,
                             lte_ul_mcs_table, lte_ul_mcs, **kwargs):
         test_cases = []
         with open(self.testclass_params['lte_single_cell_configs'],
                   'r') as csvfile:
             test_configs = csv.DictReader(csvfile)
-            for test_config, lte_dl_mcs in itertools.product(
-                    test_configs, dl_mcs_list):
+            for test_config in test_configs:
                 if int(test_config['skip_test']):
                     continue
                 endc_combo_config = self.generate_endc_combo_config(
                     test_config)
-                test_name = 'test_lte_B{}_dl_{}_mcs{}'.format(
-                    test_config['lte_band'], lte_dl_mcs_table, lte_dl_mcs)
+                test_name = 'test_lte_B{}_dl_{}'.format(
+                    test_config['lte_band'], lte_dl_mcs_table)
                 test_params = collections.OrderedDict(
                     endc_combo_config=endc_combo_config,
                     lte_dl_mcs_table=lte_dl_mcs_table,
-                    lte_dl_mcs=lte_dl_mcs,
+                    lte_dl_mcs='WCQI',
                     lte_ul_mcs_table=lte_ul_mcs_table,
                     lte_ul_mcs=lte_ul_mcs,
                     **kwargs)

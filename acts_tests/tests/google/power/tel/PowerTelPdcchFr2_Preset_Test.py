@@ -23,11 +23,8 @@ class PowerTelPdcchFr2_Preset_Test(PB.PowerCellularPresetLabBaseTest):
         Requirements for this test are that mac padding is off and that the
         inactivity timer is not enabled. """
 
-        # Measure power
-        self.collect_power_data()
-
-        # Check if power measurement is within the required values
-        self.pass_fail_check(self.avg_current)
+        # Measure power and check against threshold
+        self.collect_power_data_and_validate()
 
     def test_preset_nsa_cdrx_fr2(self):
         self.power_pdcch_test()

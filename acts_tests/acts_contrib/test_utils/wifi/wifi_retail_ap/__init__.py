@@ -84,6 +84,10 @@ def create(configs):
             'name': 'NetgearRAXE500AP',
             'package': 'netgear_raxe500'
         },
+        ('Netgear', 'RS700'): {
+            'name': 'NetgearRS700AP',
+            'package': 'netgear_rs700'
+        },
         ('Brcm', 'Reference'): {
             'name': 'BrcmRefAP',
             'package': 'brcm_ref'
