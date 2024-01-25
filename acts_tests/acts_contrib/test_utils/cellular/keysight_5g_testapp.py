@@ -714,6 +714,20 @@ class Keysight5GTestApp(object):
                 'BSE:CONFig:NR5G:UL:{}:CLPControl:TARGet:POWer:ALL {}'.format(
                     channel, target))
 
+    def configure_channel_emulator(self, cell_type, cell, fading_model):
+        if cell_type == 'LTE':
+            self.send_cmd('BSE:CONFig:{}:{}:CMODel {}'.format(cell_type, Keysight5GTestApp._format_cells(cell), fading_model['channel_model']))
+            self.send_cmd('BSE:CONFig:{}:{}:CMATrix {}'.format(cell_type, Keysight5GTestApp._format_cells(cell), fading_model['correlation_matrix']))
+            self.send_cmd('BSE:CONFig:{}:{}:MDSHift {}'.format(cell_type, Keysight5GTestApp._format_cells(cell), fading_model['max_doppler']))
+        elif cell_type == 'NR5G':
+            #TODO: check that this is FR1
+            self.send_cmd('BSE:CONFig:{}:{}:FRANge1:CMODel {}'.format(cell_type, Keysight5GTestApp._format_cells(cell), fading_model['channel_model']))
+            self.send_cmd('BSE:CONFig:{}:{}:FRANge1:CMATrix {}'.format(cell_type, Keysight5GTestApp._format_cells(cell), fading_model['correlation_matrix']))
+            self.send_cmd('BSE:CONFig:{}:{}:FRANge1:MDSHift {}'.format(cell_type, Keysight5GTestApp._format_cells(cell), fading_model['max_doppler']))
+
+    def set_channel_emulator_state(self, state):
+        self.send_cmd('BSE:CONFig:FADing:ENABle {}'.format(int(state)))
+
     def apply_lte_carrier_agg(self, cells):
         """Function to start LTE carrier aggregation on already configured cells"""
         if self.wait_for_cell_status('LTE', 'CELL1', 'CONN', 60):
