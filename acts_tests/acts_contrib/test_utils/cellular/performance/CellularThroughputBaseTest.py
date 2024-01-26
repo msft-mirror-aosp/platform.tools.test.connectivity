@@ -366,6 +366,10 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                 self.keysight_test_app.set_cell_mimo_config(
                     cell['cell_type'], cell['cell_number'], 'UL',
                     cell['ul_mimo_config'])
+            if 'fading_scenario' in self.testclass_params:
+                self.keysight_test_app.configure_channel_emulator(
+                    cell['cell_type'], cell['cell_number'],
+                    self.testclass_params['fading_scenario'][cell['cell_type']])
 
         if testcase_params.get('force_contiguous_nr_channel', False):
             self.keysight_test_app.toggle_contiguous_nr_channels(1)
@@ -464,6 +468,12 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                     time.sleep(MEDIUM_SLEEP)
                 else:
                     asserts.fail('DUT did not connect to NR.')
+
+        if 'fading_scenario' in self.testclass_params and self.testclass_params['fading_scenario']['enable']:
+            self.log.info('Enabling fading.')
+            self.keysight_test_app.set_channel_emulator_state(self.testclass_params['fading_scenario']['enable'])
+        else:
+            self.keysight_test_app.set_channel_emulator_state(0)
 
     def _test_throughput_bler(self, testcase_params):
         """Test function to run cellular throughput and BLER measurements.

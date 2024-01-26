@@ -42,7 +42,7 @@ class CellularLteRvrTest(CellularThroughputBaseTest):
         self.testclass_metric_logger = (
             BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
-        self.testclass_params = self.user_params['lte_sensitivity_test_params']
+        self.testclass_params = self.user_params['lte_rvr_test_params']
         self.tests = self.generate_test_cases(lte_dl_mcs_table='QAM256',
                                               lte_ul_mcs_table='QAM256',
                                               lte_ul_mcs=4,
