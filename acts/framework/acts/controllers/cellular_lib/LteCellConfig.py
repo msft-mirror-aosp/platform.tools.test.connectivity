@@ -114,6 +114,7 @@ class LteCellConfig(base_cell.BaseCellConfig):
         self.drx_retransmission_timer = None
         self.drx_long_cycle = None
         self.drx_long_cycle_offset = None
+        self.tracking_area = None
         self.disable_all_ul_subframes = None
 
     def __str__(self):
@@ -387,8 +388,6 @@ class LteCellConfig(base_cell.BaseCellConfig):
 
         if self.PARAM_TA in parameters:
             self.tracking_area = int(parameters[self.PARAM_TA])
-        else:
-            self.tracking_area = None
 
     def get_duplex_mode(self):
         """ Determines if the cell uses FDD or TDD duplex mode
