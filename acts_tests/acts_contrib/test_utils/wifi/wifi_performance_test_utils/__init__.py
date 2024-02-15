@@ -276,7 +276,7 @@ def get_iperf_arg_string(duration,
                          num_processes=1,
                          udp_throughput='1000M',
                          ipv6=False,
-                         udp_length=1470):
+                         udp_length=1448):
     """Function to format iperf client arguments.
 
     This function takes in iperf client parameters and returns a properly

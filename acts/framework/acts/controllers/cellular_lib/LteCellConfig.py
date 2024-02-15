@@ -69,17 +69,19 @@ class LteCellConfig(base_cell.BaseCellConfig):
     PARAM_TM = "tm"
     PARAM_BAND = "band"
     PARAM_MIMO = "mimo"
-    PARAM_DL_MCS = 'dlmcs'
-    PARAM_UL_MCS = 'ulmcs'
-    PARAM_SSF = 'ssf'
-    PARAM_CFI = 'cfi'
-    PARAM_PAGING = 'paging'
-    PARAM_PHICH = 'phich'
-    PARAM_DRX = 'drx'
-    PARAM_PADDING = 'mac_padding'
+    PARAM_DL_MCS = "dlmcs"
+    PARAM_UL_MCS = "ulmcs"
+    PARAM_SSF = "ssf"
+    PARAM_CFI = "cfi"
+    PARAM_PAGING = "paging"
+    PARAM_PHICH = "phich"
+    PARAM_DRX = "drx"
+    PARAM_PADDING = "mac_padding"
     PARAM_DL_256_QAM_ENABLED = "256_qam_dl_enabled"
     PARAM_UL_64_QAM_ENABLED = "64_qam_ul_enabled"
-    PARAM_DL_EARFCN = 'dl_earfcn'
+    PARAM_DL_EARFCN = "dl_earfcn"
+    PARAM_TA = "tracking_area"
+    PARAM_DISABLE_ALL_UL_SUBFRAMES = "disable_all_ul_subframes"
 
     def __init__(self, log):
         """ Initialize the base station config by setting all its
@@ -112,6 +114,8 @@ class LteCellConfig(base_cell.BaseCellConfig):
         self.drx_retransmission_timer = None
         self.drx_long_cycle = None
         self.drx_long_cycle_offset = None
+        self.tracking_area = None
+        self.disable_all_ul_subframes = None
 
     def __str__(self):
         return str(vars(self))
@@ -262,7 +266,12 @@ class LteCellConfig(base_cell.BaseCellConfig):
                                      self.PARAM_DL_256_QAM_ENABLED))
 
             self.dl_256_qam_enabled = parameters.get(
-                self.PARAM_DL_256_QAM_ENABLED, False)
+                self.PARAM_DL_256_QAM_ENABLED, False
+            )
+
+            self.disable_all_ul_subframes = parameters.get(
+                self.PARAM_DISABLE_ALL_UL_SUBFRAMES, False
+            )
 
             # Look for a DL MCS configuration in the test parameters. If it is
             # not present, use a default value.
@@ -376,6 +385,9 @@ class LteCellConfig(base_cell.BaseCellConfig):
                 raise ValueError(
                     'The {} key has to be followed by the paging cycle '
                     'duration in milliseconds.'.format(self.PARAM_PAGING))
+
+        if self.PARAM_TA in parameters:
+            self.tracking_area = int(parameters[self.PARAM_TA])
 
     def get_duplex_mode(self):
         """ Determines if the cell uses FDD or TDD duplex mode

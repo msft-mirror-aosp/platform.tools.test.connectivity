@@ -40,6 +40,7 @@ install_requires = [
     'requests',
     'retry',
     'scapy',
+    'scp',
     'usbinfo',
     'zeroconf'
 ]
@@ -53,7 +54,9 @@ versioned_deps = {
 }
 
 # numpy and scipy version matrix per:
-# https://docs.scipy.org/doc/scipy/reference/toolchain.html
+# https://docs.scipy.org/doc/scipy/dev/toolchain.html
+if sys.version_info < (3, 9):
+    versioned_deps['scipy'] = 'scipy<1.11'
 if sys.version_info < (3, 8):
     versioned_deps['numpy'] = 'numpy<1.22'
     versioned_deps['scipy'] = 'scipy<1.8'
@@ -64,6 +67,7 @@ if sys.version_info < (3, 7):
     versioned_deps['protobuf'] = 'protobuf==3.20.1'
     versioned_deps['grpcio'] = 'grpcio==1.48.2'
     versioned_deps['typing_extensions'] = 'typing_extensions==4.1.1'
+    versioned_deps['cryptography'] = 'cryptography<41.0'
 if (sys.version_info.major, sys.version_info.minor) == (3, 6):
     versioned_deps['dataclasses'] = 'dataclasses==0.8'
 if sys.version_info < (3, 6):

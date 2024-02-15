@@ -181,7 +181,10 @@ class DataUsageTest(base_test.BaseTestClass):
         Returns:
             Data usage in MB
         """
-        subscriber_id = ad.droid.telephonyGetSubscriberId()
+        if conn_type == cconst.TYPE_WIFI:
+            subscriber_id = None
+        else:
+            subscriber_id = ad.droid.telephonyGetSubscriberId()
         end_time = int(time.time() * 1000) + 2 * HOUR_IN_MILLIS
         data_usage = ad.droid.connectivityQueryDetailsForUidRxBytes(
             conn_type, subscriber_id, 0, end_time, uid)
@@ -197,7 +200,10 @@ class DataUsageTest(base_test.BaseTestClass):
         Returns:
             Data usage in MB
         """
-        subscriber_id = ad.droid.telephonyGetSubscriberId()
+        if conn_type == cconst.TYPE_WIFI:
+            subscriber_id = None
+        else:
+            subscriber_id = ad.droid.telephonyGetSubscriberId()
         end_time = int(time.time() * 1000) + 2 * HOUR_IN_MILLIS
         data_usage = ad.droid.connectivityQuerySummaryForDeviceRxBytes(
             conn_type, subscriber_id, 0, end_time)

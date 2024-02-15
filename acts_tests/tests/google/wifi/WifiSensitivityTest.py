@@ -248,7 +248,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         for plot_id, plot in plots.items():
             plot.generate_figure()
             figure_list.append(plot)
-        output_file_path = os.path.join(self.log_path, 'results.html')
+        output_file_path = os.path.join(self.log_path, 'PER_curves.html')
         BokehFigure.save_figures(figure_list, output_file_path)
 
     def process_testclass_results(self):

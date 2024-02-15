@@ -16,9 +16,8 @@
 import time
 
 from acts_contrib.test_utils.power.cellular.ims_api_connector_utils import ImsApiConnector
-import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
+from acts_contrib.test_utils.power.cellular.ims_api_connector_utils import ImsAppName
 from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 import acts_contrib.test_utils.power.cellular.cellular_power_preset_base_test as PB
 
 
@@ -57,6 +56,8 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
     IMS_CLIENT = 'client'
     IMS_SERVER = 'server'
 
+    UE_DEFAULT_NUMBER = '001010123456789'
+
     def setup_class(self):
         """ Executed only once when initializing the class. """
         super().setup_class()
@@ -80,23 +81,27 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         self.unpack_userparams(api_connector_port=self.IMS_API_CONNECTOR_DEFAULT_PORT,
                                api_token=self.IMS_CLIENT_DEFAULT_API_TOKEN,
                                ims_client_ip=self.IMS_CLIENT_DEFAULT_IP,
-                               ims_client_port=self.IMS_CLIENT_DEFAULT_PORT)
+                               ims_client_port=self.IMS_CLIENT_DEFAULT_PORT,
+                               ue_number=self.UE_DEFAULT_NUMBER)
         self.ims_client = ImsApiConnector(
             self.uxm_ip,
             self.api_connector_port,
-            self.IMS_CLIENT,
-            self.api_token,
-            self.ims_client_ip,
-            self.ims_client_port,
-            self.log
+            ImsAppName.CLIENT
+        )
+
+        self.ims_server = ImsApiConnector(
+            self.uxm_ip,
+            self.api_connector_port,
+            ImsAppName.SERVER
         )
 
     def setup_test(self):
         # Enable NR if it is VoNR test case
         self.log.info(f'test name: {self.test_name}')
+        self.ims_server.restart_server()
         if 'NR' in self.test_name:
             self.log.info('Enable VoNR for UE.')
-            self.enable_ims_nr()
+            self.at_util.enable_ims_nr()
         super().setup_test()
 
     def power_ims_call_test(self):
@@ -114,7 +119,7 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
 
         # Initiate the voice call
         self.log.info('Callbox initiates call to UE.')
-        self.ims_client.initiate_call('001010123456789')
+        self.ims_client.initiate_call(self.ue_number)
 
         time.sleep(5)
 
@@ -122,28 +127,29 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         self.log.info('UE pick up call.')
         self.dut.adb.shell('input keyevent KEYCODE_CALL')
 
+        # Set mac padding
+        if 'NR' in self.test_name:
+            self.cellular_simulator.modify_dl_ul_mac_padding()
+
         # Mute the call
         self.dut.droid.telecomCallMute()
 
         # Turn of screen
         self.dut.droid.goToSleepNow()
 
-        # Measure power
-        self.collect_power_data()
-
-        # End the call
-        hangup_call(self.log, self.dut)
-
-        # Check if power measurement is within the required values
-        self.pass_fail_check()
+        # Measure power and check against threshold
+        self.collect_power_data_and_validate()
 
     def teardown_test(self):
         super().teardown_test()
-        #self.cellular_simulator.deregister_ue_ims()
-        self.ims_client.remove_ims_app_link()
+        # End the call
+        self.log.info('Hangup.')
+        self.ims_client.hangup_call()
 
     def teardown_class(self):
         super().teardown_class()
+        self.ims_client.tear_down()
+        self.ims_server.tear_down()
         self.log.info('Disable IMS.')
         self.dut.adb.shell(self.ADB_CMD_DISABLE_IMS)
 

@@ -7,6 +7,10 @@ from scapy.all import get_if_raw_hwaddr
 from scapy.layers.dns import DNS, DNSQR
 from scapy.layers.inet import IP, ICMP, UDP, TCP, RandShort, sr1
 from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
+from scapy.config import conf
+from scapy.sendrecv import send, sendp, srp1
+from scapy.layers.l2 import Ether
+import time
 
 DUMSYS_CMD = "dumpsys connectivity tethering"
 UPSTREAM_WANTED_STRING = "Upstream wanted"
@@ -42,6 +46,8 @@ class UsbTetheringTest(base_test.BaseTestClass):
     nutils.start_usb_tethering(self.dut)
     self.dut.recreate_services(serial)
     self.iface = nutils.wait_for_new_iface(iflist_before)
+    conf.route6.resync()
+    self.log.info("USB tethering interface: %s." % self.iface)
     if not self.check_upstream_ready():
       raise asserts.fail("Upstream interface is not active.")
 
@@ -64,9 +70,9 @@ class UsbTetheringTest(base_test.BaseTestClass):
     """
     icmp = IP(dst=GOOGLE_DNS_IP_ADDRESS)/ICMP()
     resp = sr1(icmp, timeout=2, iface=self.iface)
+    resp_msg = resp.show(dump=True) if resp else "null"
     asserts.assert_true(
-        resp and resp.haslayer(ICMP),
-        "Failed to send ICMP: " + resp.show(dump=True) if resp else "null")
+        resp and resp.haslayer(ICMP), "Failed to send ICMP: " + resp_msg)
 
   @test_tracker_info(uuid="0dc7d049-11bf-42f9-918a-263f4470a7e8")
   def test_icmpv6_connectivity(self):
@@ -79,9 +85,9 @@ class UsbTetheringTest(base_test.BaseTestClass):
     """
     icmpv6 = IPv6(dst=DEFAULT_DOMAIN_NAME_IPV6)/ICMPv6EchoRequest()
     resp = sr1(icmpv6, timeout=2, iface=self.iface)
+    resp_msg = resp.show(dump=True) if resp else "null"
     asserts.assert_true(
-        resp and resp.haslayer(IPv6),
-        "Failed to send ICMPv6: " + resp.show(dump=True) if resp else "null")
+        resp and resp.haslayer(IPv6), "Failed to send ICMPv6: " + resp_msg)
 
   @test_tracker_info(uuid="34aaffb8-8dd4-4a1f-a158-2732b8df5e59")
   def test_dns_query_connectivity(self):
@@ -96,9 +102,9 @@ class UsbTetheringTest(base_test.BaseTestClass):
             /UDP(sport=RandShort(), dport=53) \
             /DNS(rd=1, qd=DNSQR(qname=DEFAULT_DOMAIN_NAME))
     resp = sr1(dnsqr, timeout=2, iface=self.iface)
+    resp_msg = resp.show(dump=True) if resp else "null"
     asserts.assert_true(
-        resp and resp.haslayer(DNS),
-        "Failed to send DNS query: " + resp.show(dump=True) if resp else "null")
+        resp and resp.haslayer(DNS), "Failed to send DNS query: " + resp_msg)
 
   @test_tracker_info(uuid="b9bed0fa-3178-4456-92e0-736b3a8cc181")
   def test_tcp_connectivity(self):
@@ -111,9 +117,9 @@ class UsbTetheringTest(base_test.BaseTestClass):
     """
     tcp = IP(dst=DEFAULT_DOMAIN_NAME)/TCP(dport=[80, 443])
     resp = sr1(tcp, timeout=2, iface=self.iface)
+    resp_msg = resp.show(dump=True) if resp else "null"
     asserts.assert_true(
-        resp and resp.haslayer(TCP),
-        "Failed to send TCP packet:" + resp.show(dump=True) if resp else "null")
+        resp and resp.haslayer(TCP), "Failed to send TCP packet:" + resp_msg)
 
   @test_tracker_info(uuid="5e2f31f4-0b18-44be-a1ba-d82bf9050996")
   def test_tcp_ipv6_connectivity(self):
@@ -126,10 +132,20 @@ class UsbTetheringTest(base_test.BaseTestClass):
     """
     tcp_ipv6 = IPv6(dst=DEFAULT_DOMAIN_NAME_IPV6)/TCP(dport=[80, 443])
     resp = sr1(tcp_ipv6, timeout=2, iface=self.iface)
+    resp_msg = resp.show(dump=True) if resp else "null"
     asserts.assert_true(
-        resp and resp.haslayer(IPv6),
-        "Failed to send TCP packet over IPv6, resp: " +
-        resp.show(dump=True) if resp else "null")
+        resp and resp.haslayer(IPv6), "Failed to send TCP packet over IPv6, resp: " + resp_msg)
+
+  def _send_http_get(self, destination, interface):
+    try:
+        syn_ack = srp1(Ether() / IPv6(dst=destination) / TCP(dport=80, flags="S"), timeout=2, iface=interface)
+        sendp(Ether() / IPv6(dst=destination) / TCP(dport=80, sport=syn_ack[TCP].dport,seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='A'), iface=interface)
+        http_get_str = "GET / HTTP/1.1\r\nHost:" + destination + "\r\nAccept-Encoding: gzip, deflate\r\n\r\n"
+        req = Ether() / IPv6(dst=destination)/TCP(dport=80, sport=syn_ack[TCP].dport, seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags='A')/http_get_str
+        return srp1(req, timeout=2, iface=interface, retry = 3, filter = "tcp port 80")
+    except TypeError:
+        self.log.warn("Packet is sent but no answer from the server %s." % destination)
+        return None
 
   @test_tracker_info(uuid="96115afb-e0d3-40a8-8f04-b64cedc6588f")
   def test_http_connectivity(self):
@@ -140,16 +156,15 @@ class UsbTetheringTest(base_test.BaseTestClass):
     2. Implement TCP 3-way handshake to simulate HTTP GET
     3. Verify that the 3-way handshake works and response contains a TCP layer
     """
-    syn_ack = sr1(IP(dst=DEFAULT_DOMAIN_NAME)
-                  / TCP(dport=80, flags="S"), timeout=2, iface=self.iface)
-    get_str = "GET / HTTP/1.1\r\nHost: " + DEFAULT_DOMAIN_NAME + "\r\n\r\n"
-    req = IP(dst=DEFAULT_DOMAIN_NAME)/TCP(dport=80, sport=syn_ack[TCP].dport,
-             seq=syn_ack[TCP].ack, ack=syn_ack[TCP].seq + 1, flags="A")/get_str
-    resp = sr1(req, timeout=2, iface=self.iface)
+    resp = None
+    for _ in range(3):
+      resp = self._send_http_get(DEFAULT_DOMAIN_NAME, self.iface)
+      if resp:
+        break
+      time.sleep(3)
+    resp_msg = resp.show(dump=True) if resp else "null"
     asserts.assert_true(
-        resp and resp.haslayer(TCP),
-        "Failed to send HTTP request, resp: " +
-        resp.show(dump=True) if resp else "null")
+        resp and resp.haslayer(TCP), "Failed to send HTTP request, resp: " + resp_msg)
 
   @test_tracker_info(uuid="140a064b-1ab0-4a92-8bdb-e52dde03d5b8")
   def test_usb_tethering_over_wifi(self):
