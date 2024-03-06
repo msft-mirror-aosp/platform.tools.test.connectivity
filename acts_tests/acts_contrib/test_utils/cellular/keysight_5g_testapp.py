@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import collections
+import itertools
 import pyvisa
 import time
 from acts import logger
@@ -38,6 +39,12 @@ class Keysight5GTestApp(object):
 
     def __init__(self, config):
         self.config = config
+        self.test_app_settings = {
+            'lte_cell_count': 0,
+            'nr_cell_count': 0,
+            'lte_cell_configs': [],
+            'nr_cell_configs': []
+        }
         self.log = logger.create_tagged_trace_logger("{}{}".format(
             self.config['brand'], self.config['model']))
         self.resource_manager = pyvisa.ResourceManager(self.VISA_LOCATION)
@@ -56,6 +63,9 @@ class Keysight5GTestApp(object):
                 'Failed to connect to Keysight Test App: {}'.format(inst_id))
         else:
             self.log.info("Test App ID: {}".format(inst_id))
+
+        self.test_app_settings['lte_cell_count'] = self.get_cell_count('LTE')
+        self.test_app_settings['nr_cell_count'] = self.get_cell_count('NR5G')
 
     def destroy(self):
         self.test_app.close()
@@ -194,6 +204,18 @@ class Keysight5GTestApp(object):
         self.select_cell(cell_type, cell)
         self.send_cmd('DISPlay:{} {},{}'.format(cell_type, tab, subtab))
 
+    def get_cell_count(self, cell_type):
+        """Function to get cell count
+
+        Args:
+            cell_type: LTE or NR5G cell
+        Returns:
+            cell_count: number of cells of cell_type supported.
+        """
+        cell_count = int(
+            self.send_cmd('BSE:CONFig:{}:CELL:COUNt?'.format(cell_type), 1))
+        return cell_count
+
     def get_cell_state(self, cell_type, cell):
         """Function to get cell on/off state.
 
@@ -249,17 +271,23 @@ class Keysight5GTestApp(object):
         self.send_cmd('BSE:CONFig:{}:{}:ACTive:STATe {}'.format(
             cell_type, Keysight5GTestApp._format_cells(cell), state))
 
-    def set_cell_type(self, cell_type, cell, sa_or_nsa):
+    def turn_all_cells_off(self):
+        for cell in range(self.test_app_settings['lte_cell_count']):
+            self.set_cell_state('LTE', cell + 1, 0)
+        for cell in range(self.test_app_settings['nr_cell_count']):
+            self.set_cell_state('NR5G', cell + 1, 0)
+
+    def set_nr_cell_type(self, cell_type, cell, nr_cell_type):
         """Function to set cell duplex mode
 
         Args:
             cell_type: LTE or NR5G cell
             cell: cell/carrier number
-            sa_or_nsa: SA or NSA
+            nr_cell_type: SA or NSA
         """
         self.assert_cell_off(cell_type, cell)
-        self.send_cmd('BSE: CONFig:NR5G:{}:TYPE {}'.format(
-            Keysight5GTestApp._format_cells(cell), sa_or_nsa))
+        self.send_cmd('BSE:CONFig:{}:{}:TYPE {}'.format(
+            cell_type, Keysight5GTestApp._format_cells(cell), nr_cell_type))
 
     def set_cell_duplex_mode(self, cell_type, cell, duplex_mode):
         """Function to set cell duplex mode
@@ -297,7 +325,8 @@ class Keysight5GTestApp(object):
         if cell_type == 'NR5G' and isinstance(
                 channel, str) and channel.lower() in ['low', 'mid', 'high']:
             self.send_cmd('BSE:CONFig:{}:{}:TESTChanLoc {}'.format(
-                cell_type, Keysight5GTestApp._format_cells(cell), channel.upper()))
+                cell_type, Keysight5GTestApp._format_cells(cell),
+                channel.upper()))
         elif arfcn == 1:
             self.send_cmd('BSE:CONFig:{}:{}:DL:CHANnel {}'.format(
                 cell_type, Keysight5GTestApp._format_cells(cell), channel))
@@ -308,7 +337,8 @@ class Keysight5GTestApp(object):
 
     def toggle_contiguous_nr_channels(self, force_contiguous):
         self.assert_cell_off('NR5G', 1)
-        self.log.warning('Forcing contiguous NR channels overrides channel config.')
+        self.log.warning(
+            'Forcing contiguous NR channels overrides channel config.')
         self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 0')
         if force_contiguous:
             self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 1')
@@ -415,6 +445,40 @@ class Keysight5GTestApp(object):
                 cell_type, Keysight5GTestApp._format_cells(cell), power))
         self.send_cmd('BSE:CONFig:{}:APPLY'.format(cell_type))
 
+    def set_cell_ul_power_control(self, cell_type, cell, mode, target_power=0):
+        """Function configure UL power control
+
+        Args:
+            cell_type: LTE or NR5G cell
+            cell: cell/carrier number
+            mode: UL power control mode. One of [TARget | MANual | UP | DOWN | DISabled]
+            target_power: target power for PUSCH
+        """
+        self.send_cmd('BSE:CONFig:{}:{}:UL:PUSCh:CLPControl:MODE {}'.format(
+            cell_type, Keysight5GTestApp._format_cells(cell), mode))
+        if cell_type == 'NR5G' and mode == 'TARget':
+            self.send_cmd(
+                'BSE:CONFig:{}:{}:UL:PUSCh:CLPControl:TARGet:POWer {}'.format(
+                    cell_type, Keysight5GTestApp._format_cells(cell),
+                    target_power))
+        elif cell_type == 'LTE' and mode == 'TARget':
+            self.send_cmd(
+                'BSE:CONFig:{}:{}:UL:CLPControl:TARGet:POWer:PUSCH {}'.format(
+                    cell_type, Keysight5GTestApp._format_cells(cell),
+                    target_power))
+
+    def set_cell_input_power(self, cell_type, cell, power):
+        """Function to set cell input power
+
+        Args:
+            cell_type: LTE or NR5G cell
+            cell: cell/carrier number
+            power: expected input power
+        """
+        self.send_cmd('BSE:CONFIG:{}:{}:MANual:POWer {}'.format(
+            cell_type, Keysight5GTestApp._format_cells(cell), power))
+        self.send_cmd('BSE:CONFig:{}:APPLY'.format(cell_type))
+
     def set_cell_duplex_mode(self, cell_type, cell, duplex_mode):
         """Function to set cell power
 
@@ -459,6 +523,18 @@ class Keysight5GTestApp(object):
                 Keysight5GTestApp._format_cells(cell), scenario))
         self.send_cmd('BSE:CONFig:NR5G:SCHeduling:QCONFig:APPLy:ALL')
 
+    def set_nr_schedule_slot_ratio(self, cell, slot_ratio):
+        """Function to set NR schedule to one of predefince quick configs.
+
+        Args:
+            cell: cell number to address. schedule will apply to all cells
+            slot_ratio: downlink slot ratio
+        """
+        self.assert_cell_off('NR5G', cell)
+        self.send_cmd('BSE:CONFig:NR5G:{}:SCHeduling:QCONFig:RATIo {}'.format(
+            Keysight5GTestApp._format_cells(cell), slot_ratio))
+        self.send_cmd('BSE:CONFig:NR5G:SCHeduling:QCONFig:APPLy:ALL')
+
     def set_nr_cell_mcs(self, cell, dl_mcs, ul_mcs):
         """Function to set NR cell DL & UL MCS
 
@@ -468,12 +544,57 @@ class Keysight5GTestApp(object):
             ul_mcs: mcs index to use on UL
         """
         self.assert_cell_off('NR5G', cell)
-        self.send_cmd(
-            'BSE:CONFig:NR5G:SCHeduling:SETParameter "CELLALL:BWPALL:FCALL:SCALL", "DL:IMCS", "{}"'
-            .format(dl_mcs))
+        frame_config_count = 5
+        slot_config_count = 8
+        if isinstance(dl_mcs, dict):
+            self.configure_nr_link_adaptation(cell, link_config=dl_mcs)
+        else:
+            for frame, slot in itertools.product(range(frame_config_count),
+                                                 range(slot_config_count)):
+                self.send_cmd(
+                    'BSE:CONFig:NR5G:{}:SCHeduling:BWP0:FC{}:SC{}:DL:RRESource:APOLicy FIXed'
+                    .format(Keysight5GTestApp._format_cells(cell), frame,
+                            slot))
+            self.send_cmd(
+                'BSE:CONFig:NR5G:SCHeduling:SETParameter "CELLALL:BWPALL:FCALL:SCALL", "DL:IMCS", "{}"'
+                .format(dl_mcs))
         self.send_cmd(
             'BSE:CONFig:NR5G:SCHeduling:SETParameter "CELLALL:BWPALL:FCALL:SCALL", "UL:IMCS", "{}"'
             .format(ul_mcs))
+
+    def configure_nr_link_adaptation(self, cell, link_config):
+        frame_config_count = 5
+        slot_config_count = 8
+        for frame, slot in itertools.product(range(frame_config_count),
+                                             range(slot_config_count)):
+            self.send_cmd(
+                'BSE:CONFig:NR5G:{}:SCHeduling:BWP0:FC{}:SC{}:DL:RRESource:APOLicy {}'
+                .format(Keysight5GTestApp._format_cells(cell), frame, slot,
+                        link_config['link_policy']))
+            self.send_cmd(
+                'BSE:CONFig:NR5G:{}:SCHeduling:BWP0:FC{}:SC{}:DL:IMCS {}'.
+                format(Keysight5GTestApp._format_cells(cell), frame, slot,
+                       link_config['initial_mcs']))
+            self.send_cmd(
+                'BSE:CONFig:NR5G:{}:SCHeduling:BWP0:FC{}:SC{}:DL:MAXimum:IMCS {}'
+                .format(Keysight5GTestApp._format_cells(cell), frame, slot,
+                        link_config['maximum_mcs']))
+        self.send_cmd(
+            'BSE:CONFig:NR5G:{}:MAC:LADaptation:NTX:BEValuation {}'.format(
+                Keysight5GTestApp._format_cells(cell),
+                link_config.get('adaptation_interval', 10000)))
+        self.send_cmd(
+            'BSE:CONFig:NR5G:{}:MAC:LADaptation:TARGet:NACK:COUNt {}'.format(
+                Keysight5GTestApp._format_cells(cell),
+                link_config.get('target_nack_count', 1000)))
+        self.send_cmd(
+            'BSE:CONFig:NR5G:{}:MAC:LADaptation:TARGet:NACK:MARGin {}'.format(
+                Keysight5GTestApp._format_cells(cell),
+                link_config.get('target_nack_margin', 100)))
+        self.send_cmd(
+            'BSE:CONFig:NR5G:{}:MAC:DL:LADaptation:MCS:INCRement {}'.format(
+                Keysight5GTestApp._format_cells(cell),
+                link_config.get('mcs_step', 1)))
 
     def set_lte_cell_mcs(
         self,
@@ -500,15 +621,28 @@ class Keysight5GTestApp(object):
         self.send_cmd(
             'BSE:CONFig:LTE:SCHeduling:SETParameter "CELLALL", "DL:MCS:TABle", "{}"'
             .format(dl_mcs_table_formatted))
-        self.send_cmd(
-            'BSE:CONFig:LTE:SCHeduling:SETParameter "CELLALL:SFALL:CWALL", "DL:IMCS", "{}"'
-            .format(dl_mcs))
+        self.configure_lte_periodic_csi_reporting(cell, 1)
+        if dl_mcs == 'WCQI':
+            self.send_cmd('BSE:CONFig:LTE:{}:PHY:DL:IMCS:MODE WCQI'.format(
+                Keysight5GTestApp._format_cells(cell)))
+        else:
+            self.send_cmd('BSE:CONFig:LTE:{}:PHY:DL:IMCS:MODE EXPLicit'.format(
+                Keysight5GTestApp._format_cells(cell)))
+            self.send_cmd(
+                'BSE:CONFig:LTE:SCHeduling:SETParameter "CELLALL:SFALL:CWALL", "DL:IMCS", "{}"'
+                .format(dl_mcs))
         self.send_cmd(
             'BSE:CONFig:LTE:SCHeduling:SETParameter "CELLALL", "UL:MCS:TABle", "{}"'
             .format(ul_mcs_table))
         self.send_cmd(
             'BSE:CONFig:LTE:SCHeduling:SETParameter "CELLALL:SFALL", "UL:IMCS", "{}"'
             .format(ul_mcs))
+
+    def configure_lte_periodic_csi_reporting(self, cell, enable):
+        """Function to enable/disable LTE CSI reporting."""
+
+        self.send_cmd('BSE:CONFig:LTE:{}:PHY:CSI:PERiodic:STATe {}'.format(
+            Keysight5GTestApp._format_cells(cell), enable))
 
     def set_lte_control_region_size(self, cell, num_symbols):
         self.assert_cell_off('LTE', cell)

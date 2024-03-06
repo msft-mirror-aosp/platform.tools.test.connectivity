@@ -13,8 +13,6 @@
 #   limitations under the License.
 
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
-from acts.controllers.cellular_lib import BaseCellularDut
-
 
 class PresetSimulation(BaseSimulation):
     """5G preset simulation.
@@ -26,12 +24,6 @@ class PresetSimulation(BaseSimulation):
     # Keys to obtain settings from the test_config dictionary.
     KEY_CELL_INFO = "cell_info"
     KEY_SCPI_FILE_NAME = "scpi_file"
-
-    NETWORK_BIT_MASK = {
-        'nr_lte': '11000001000000000000'
-    }
-    ADB_CMD_LOCK_NETWORK = 'cmd phone set-allowed-network-types-for-users -s 0 {network_bit_mask}'
-    NR_LTE_BIT_MASK_KEY = 'nr_lte'
 
     def __init__(self,
                  simulator,
@@ -60,9 +52,6 @@ class PresetSimulation(BaseSimulation):
         log.info('Configuring APN.')
         self.dut.set_apn('Keysight', 'Keysight')
         self.num_carriers = None
-
-        # Enable roaming on the phone
-        self.dut.toggle_data_roaming(True)
 
     def setup_simulator(self):
         """Do initial configuration in the simulator. """
@@ -110,11 +99,9 @@ class PresetSimulation(BaseSimulation):
             RuntimeError: attaching fail
                 due to unable to connect dut and cells.
         """
-        try:
-            self.simulator.wait_until_attached(self.dut, self.attach_timeout,
-                                               self.attach_retries)
-        except Exception as exc:
-            raise RuntimeError('Could not attach to base station.') from exc
+        self.simulator.wait_until_attached(self.dut,
+                                           self.attach_timeout,
+                                           self.attach_retries)
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """Convert RSRP to total signal power from the basestation.

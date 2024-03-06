@@ -24,11 +24,8 @@ class PowerTelIdle_Preset_Test(PB.PowerCellularPresetLabBaseTest):
         # Wait for RRC status change to trigger
         self.cellular_simulator.wait_until_idle_state(idle_wait_time)
 
-        # Measure power
-        self.collect_power_data()
-
-        # Check if power measurement is below the required value
-        self.pass_fail_check(self.avg_current)
+        # Measure power and check against threshold
+        self.collect_power_data_and_validate()
 
     def test_preset_LTE_idle(self):
         self.power_tel_idle_test()

@@ -850,25 +850,6 @@ class WifiRssiTest(base_test.BaseTestClass):
         return test_cases
 
 
-class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
-
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.tests = self.generate_test_cases(
-            ['test_rssi_stability', 'test_rssi_vs_atten'], [1, 2, 6, 10, 11],
-            ['bw20'], ['ActiveTraffic'])
-
-
-class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
-
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.tests = self.generate_test_cases(
-            ['test_rssi_stability', 'test_rssi_vs_atten'],
-            [36, 40, 44, 48, 149, 153, 157, 161], ['bw20', 'bw40', 'bw80'],
-            ['ActiveTraffic'])
-
-
 class WifiRssi_AllChannels_ActiveTraffic_Test(WifiRssiTest):
 
     def __init__(self, controllers):
@@ -885,8 +866,8 @@ class WifiRssi_SampleChannels_NoTraffic_Test(WifiRssiTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
-            ['test_rssi_stability', 'test_rssi_vs_atten'], [6, 36, 149],
-            ['bw20', 'bw40', 'bw80'], ['NoTraffic'])
+            ['test_rssi_stability', 'test_rssi_vs_atten'], [6, 36, 149, '6g37'],
+            ['bw20', 'bw40', 'bw80', 'bw160'], ['NoTraffic'])
 
 
 class WifiRssiTrackingTest(WifiRssiTest):
@@ -894,8 +875,8 @@ class WifiRssiTrackingTest(WifiRssiTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['test_rssi_tracking'],
-                                              [6, 36, 149],
-                                              ['bw20', 'bw40', 'bw80'],
+                                              [6, 36, 149, '6g37'],
+                                              ['bw20', 'bw40', 'bw80', 'bw160'],
                                               ['ActiveTraffic', 'NoTraffic'])
 
 
@@ -1109,24 +1090,13 @@ class WifiOtaRssiTest(WifiRssiTest):
             test_cases.append(test_name)
         return test_cases
 
-
-class WifiOtaRssi_Accuracy_Test(WifiOtaRssiTest):
-
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.tests = self.generate_test_cases(['test_rssi_vs_atten'],
-                                              [6, 36, 149, '6g37'], ['bw20'],
-                                              ['ActiveTraffic'],
-                                              ['orientation'],
-                                              list(range(0, 360, 45)))
-
-
 class WifiOtaRssi_StirrerVariation_Test(WifiOtaRssiTest):
 
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(['test_rssi_variation'],
-                                              [6, 36, 149, '6g37'], ['bw20'],
+                                              [6, 36, 149, '6g37'],
+                                              ['bw20', 'bw80', 'bw160'],
                                               ['ActiveTraffic'],
                                               ['StirrersOn'], [0])
 
@@ -1136,7 +1106,8 @@ class WifiOtaRssi_TenDegree_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(['test_rssi_over_orientation'],
-                                              [6, 36, 149, '6g37'], ['bw20'],
+                                              [6, 36, 149, '6g37'],
+                                              ['bw20', 'bw80', 'bw160'],
                                               ['ActiveTraffic'],
                                               ['orientation'],
                                               list(range(0, 360, 10)))
