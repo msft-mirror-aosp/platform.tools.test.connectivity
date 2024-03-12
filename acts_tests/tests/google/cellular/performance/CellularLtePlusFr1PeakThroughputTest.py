@@ -66,60 +66,60 @@ class CellularLtePlusFr1PeakThroughputTest(CellularThroughputBaseTest):
                 'nr_cell_count']:
             metric_map.update({
                 'nr_min_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']['min_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['DL']['min_tput'],
                 'nr_max_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']['max_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['DL']['max_tput'],
                 'nr_avg_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['DL']
                 ['average_tput'],
                 'nr_theoretical_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['DL']
                 ['theoretical_tput'],
                 'nr_dl_bler':
-                testcase_result['nr_bler_result']['total']['DL']['nack_ratio']
+                testcase_result['throughput_measurements']['nr_bler_result']['total']['DL']['nack_ratio']
                 * 100,
                 'nr_min_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']['min_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['UL']['min_tput'],
                 'nr_max_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']['max_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['UL']['max_tput'],
                 'nr_avg_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['UL']
                 ['average_tput'],
                 'nr_theoretical_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['UL']
                 ['theoretical_tput'],
                 'nr_ul_bler':
-                testcase_result['nr_bler_result']['total']['UL']['nack_ratio']
+                testcase_result['throughput_measurements']['nr_bler_result']['total']['UL']['nack_ratio']
                 * 100
             })
         if testcase_data['testcase_params']['endc_combo_config'][
                 'lte_cell_count']:
             metric_map.update({
                 'lte_min_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']['min_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['DL']['min_tput'],
                 'lte_max_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']['max_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['DL']['max_tput'],
                 'lte_avg_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['DL']
                 ['average_tput'],
                 'lte_theoretical_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['DL']
                 ['theoretical_tput'],
                 'lte_dl_bler':
-                testcase_result['lte_bler_result']['total']['DL']['nack_ratio']
+                testcase_result['throughput_measurements']['lte_bler_result']['total']['DL']['nack_ratio']
                 * 100,
                 'lte_min_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']['min_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['UL']['min_tput'],
                 'lte_max_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']['max_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['UL']['max_tput'],
                 'lte_avg_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['UL']
                 ['average_tput'],
                 'lte_theoretical_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['UL']
                 ['theoretical_tput'],
                 'lte_ul_bler':
-                testcase_result['lte_bler_result']['total']['UL']['nack_ratio']
+                testcase_result['throughput_measurements']['lte_bler_result']['total']['UL']['nack_ratio']
                 * 100
             })
         if self.publish_testcase_metrics:
@@ -160,68 +160,68 @@ class CellularLtePlusFr1PeakThroughputTest(CellularThroughputBaseTest):
                             'endc_combo_config']['nr_cell_count']:
                         row_dict.update({
                             'NR DL Min. Throughput':
-                            result['nr_tput_result']['total']['DL']
+                            result['throughput_measurements']['nr_tput_result']['total']['DL']
                             ['min_tput'],
                             'NR DL Max. Throughput':
-                            result['nr_tput_result']['total']['DL']
+                            result['throughput_measurements']['nr_tput_result']['total']['DL']
                             ['max_tput'],
                             'NR DL Avg. Throughput':
-                            result['nr_tput_result']['total']['DL']
+                            result['throughput_measurements']['nr_tput_result']['total']['DL']
                             ['average_tput'],
                             'NR DL Theoretical Throughput':
-                            result['nr_tput_result']['total']['DL']
+                            result['throughput_measurements']['nr_tput_result']['total']['DL']
                             ['theoretical_tput'],
                             'NR UL Min. Throughput':
-                            result['nr_tput_result']['total']['UL']
+                            result['throughput_measurements']['nr_tput_result']['total']['UL']
                             ['min_tput'],
                             'NR UL Max. Throughput':
-                            result['nr_tput_result']['total']['UL']
+                            result['throughput_measurements']['nr_tput_result']['total']['UL']
                             ['max_tput'],
                             'NR UL Avg. Throughput':
-                            result['nr_tput_result']['total']['UL']
+                            result['throughput_measurements']['nr_tput_result']['total']['UL']
                             ['average_tput'],
                             'NR UL Theoretical Throughput':
-                            result['nr_tput_result']['total']['UL']
+                            result['throughput_measurements']['nr_tput_result']['total']['UL']
                             ['theoretical_tput'],
                             'NR DL BLER (%)':
-                            result['nr_bler_result']['total']['DL']
+                            result['throughput_measurements']['nr_bler_result']['total']['DL']
                             ['nack_ratio'] * 100,
                             'NR UL BLER (%)':
-                            result['nr_bler_result']['total']['UL']
+                            result['throughput_measurements']['nr_bler_result']['total']['UL']
                             ['nack_ratio'] * 100
                         })
                     if testcase_results['testcase_params'][
                             'endc_combo_config']['lte_cell_count']:
                         row_dict.update({
                             'LTE DL Min. Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']['lte_tput_result']['total']['DL']
                             ['min_tput'],
                             'LTE DL Max. Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']['lte_tput_result']['total']['DL']
                             ['max_tput'],
                             'LTE DL Avg. Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']['lte_tput_result']['total']['DL']
                             ['average_tput'],
                             'LTE DL Theoretical Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']['lte_tput_result']['total']['DL']
                             ['theoretical_tput'],
                             'LTE UL Min. Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']['lte_tput_result']['total']['UL']
                             ['min_tput'],
                             'LTE UL Max. Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']['lte_tput_result']['total']['UL']
                             ['max_tput'],
                             'LTE UL Avg. Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']['lte_tput_result']['total']['UL']
                             ['average_tput'],
                             'LTE UL Theoretical Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']['lte_tput_result']['total']['UL']
                             ['theoretical_tput'],
                             'LTE DL BLER (%)':
-                            result['lte_bler_result']['total']['DL']
+                            result['throughput_measurements']['lte_bler_result']['total']['DL']
                             ['nack_ratio'] * 100,
                             'LTE UL BLER (%)':
-                            result['lte_bler_result']['total']['UL']
+                            result['throughput_measurements']['lte_bler_result']['total']['UL']
                             ['nack_ratio'] * 100
                         })
                     writer.writerow(row_dict)
@@ -316,7 +316,8 @@ class CellularLteFr1EndcPeakThroughputTest(CellularLtePlusFr1PeakThroughputTest
                 cell_config['cell_type'] = 'NR5G'
                 nr_cell_count = nr_cell_count + 1
                 cell_config['cell_number'] = nr_cell_count
-                nr_dl_carriers.append(cell_config['cell_number'])
+                nr_dl_carriers.append(cell_config['cell_number']),
+                cell_config['nr_cell_type'] = 'NSA',
                 cell_config['band'] = 'N' + dl_config_match.group('band')
                 cell_config['duplex_mode'] = 'FDD' if cell_config[
                     'band'] in cputils.DUPLEX_MODE_TO_BAND_MAPPING['NR5G'][
@@ -442,6 +443,7 @@ class CellularSingleCellThroughputTest(CellularLtePlusFr1PeakThroughputTest):
                 1,
                 'band':
                 test_config['nr_band'],
+                'nr_cell_type': test_config['nr_cell_type'],
                 'duplex_mode':
                 test_config['nr_duplex_mode'],
                 'dl_mimo_config':
@@ -489,6 +491,8 @@ class CellularFr1SingleCellPeakThroughputTest(CellularSingleCellThroughputTest
         self.tests = self.generate_test_cases(
             nr_mcs_pair_list=[(27, 4), (4, 27)],
             nr_channel_list=['LOW', 'MID', 'HIGH'],
+            schedule_scenario='FULL_TPUT',
+            schedule_slot_ratio=80,
             transform_precoding=0,
             lte_dl_mcs=4,
             lte_dl_mcs_table='QAM256',
@@ -507,7 +511,7 @@ class CellularFr1SingleCellPeakThroughputTest(CellularSingleCellThroughputTest
                     continue
                 endc_combo_config = self.generate_endc_combo_config(
                     test_config)
-                endc_combo_config['cell_list'][1]['channel'] = nr_channel
+                endc_combo_config['cell_list'][endc_combo_config['lte_cell_count']]['channel'] = nr_channel
                 test_name = 'test_fr1_{}_{}_dl_mcs{}_ul_mcs{}'.format(
                     test_config['nr_band'], nr_channel.lower(), nr_mcs_pair[0],
                     nr_mcs_pair[1])
