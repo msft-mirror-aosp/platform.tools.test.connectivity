@@ -132,7 +132,7 @@ class CellularBaseTest(base_test.BaseTestClass):
         # Turn on airplane mode for all devices, as some might
         # be unused during the test
         for ad in self.android_devices:
-            telutils.toggle_airplane_mode(self.log, ad, True)
+            telutils.toggle_airplane_mode_by_adb(self.log, ad, True)
 
         # Establish a connection with the cellular simulator equipment
         try:
@@ -201,7 +201,7 @@ class CellularBaseTest(base_test.BaseTestClass):
                 if getattr(self, param) is None:
                     raise RuntimeError('The uxm cellular simulator '
                                        'requires %s to be set in the '
-                                       'config file.' % key)
+                                       'config file.' % param)
             return uxm.UXMCellularSimulator(self.uxm_ip, self.custom_files,
                                             self.uxm_user,
                                             self.ssh_private_key_to_uxm,

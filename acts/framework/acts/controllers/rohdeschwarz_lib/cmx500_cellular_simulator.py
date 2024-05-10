@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import time
+from enum import Enum
 
 from acts.controllers.rohdeschwarz_lib import cmx500
 from acts.controllers.rohdeschwarz_lib.cmx500 import LteBandwidth
@@ -43,6 +44,10 @@ CMX_MIMO_MAPPING = {
 }
 
 
+class ConfigurationMode(Enum):
+    Power = "Power"
+
+
 class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     """ A cellular simulator for telephony simulations based on the CMX 500
     controller. """
@@ -50,12 +55,16 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     # The maximum power that the equipment is able to transmit
     MAX_DL_POWER = -25
 
-    def __init__(self, ip_address, port='5025'):
+    def __init__(self,
+                 ip_address,
+                 port='5025',
+                 config_mode=None):
         """ Initializes the cellular simulator.
 
         Args:
             ip_address: the ip address of the CMX500
             port: the port number for the CMX500 controller
+            config_mode: A pre-defined configuration mode to use.
         """
         super().__init__()
         try:
@@ -63,6 +72,7 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         except:
             raise cc.CellularSimulatorError('Error when Initializes CMX500.')
 
+        self._config_mode = config_mode
         self.bts = self.cmx.bts
 
     def destroy(self):
@@ -70,6 +80,41 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         the connection. """
         self.log.info('destroy the cmx500 simulator')
         self.cmx.disconnect()
+
+    def set_config_mode(self, config_mode=None):
+        """Sets config mode for the cmx 500 simulator."""
+        self._config_mode = config_mode
+
+    def configure_lte_bts(self, config, bts_index):
+        """ Commands the equipment to setup an LTE base station with the
+        required configuration except drx.
+
+        Args:
+            config: an LteSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+        self.configure_lte_bts_base(config, bts_index)
+
+    def configure_lte_bts_after_started(self, config, bts_index):
+
+        if config.drx_connected_mode:
+            self.set_cdrx_config(bts_index, config)
+        if config.disable_all_ul_subframes:
+            self.bts[bts_index].disable_all_ul_subframes()
+        self.log.info(
+            'The radio connectivity after lte started config is {}'.format(
+                self.cmx.dut.state.radio_connectivity))
+
+    def configure_nr_bts_after_started(self, config, bts_index):
+        if config.drx_connected_mode:
+            self.set_cdrx_config(bts_index, config)
+        if config.config_flexible_slots:
+            self.bts[bts_index].config_flexible_slots()
+        if config.disable_all_ul_slots:
+            self.bts[bts_index].disable_all_ul_slots()
+        self.log.info(
+            'The radio connectivity after nr started config is {}'.format(
+                self.cmx.dut.state.radio_connectivity))
 
     def setup_lte_scenario(self):
         """ Configures the equipment for an LTE simulation. """
@@ -85,13 +130,19 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.log.info('setup nsa scenario (start lte cell and nr cell')
         self.cmx.switch_on_nsa_signalling()
 
-    def set_band_combination(self, bands):
-        """ Prepares the test equipment for the indicated band combination.
+    def set_band_combination(self, bands, mimo_modes):
+        """ Prepares the test equipment for the indicated band/mimo combination.
 
         Args:
             bands: a list of bands represented as ints or strings
+            mimo_modes: a list of LteSimulation.MimoMode to use for each carrier
         """
         self.num_carriers = len(bands)
+
+        # Don't configure secondary cells if we're using the built-in power
+        # configuration.
+        if self._config_mode != ConfigurationMode.Power:
+            self.cmx.set_band_combination(bands)
 
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """ Configures the LTE RRC state change timer.
@@ -114,6 +165,18 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.log.info('set band to {}'.format(band))
         self.bts[bts_index].set_band(int(band))
+
+    def set_cdrx_config(self, bts_index, config):
+        """ Sets the tdd configuration number for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            config: the config including cdrx parameters
+        """
+        self.log.info('set cdrx config for bts {} to {}'.format(
+            bts_index, config)
+        )
+        self.bts[bts_index].set_cdrx_config(config)
 
     def get_duplex_mode(self, band):
         """ Determines if the band uses FDD or TDD duplex mode
@@ -326,6 +389,14 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.log.warning('The set_phich_resource method is not implememted, '
                          'use default value')
 
+    def set_tracking_area(self, bts_index, tac):
+        """ Assigns the cell to a specific tracking area.
+
+        Args:
+            tac: the unique tac to assign the cell to.
+        """
+        self.bts[bts_index].set_tracking_area(tac)
+
     def lte_attach_secondary_carriers(self, ue_capability_enquiry):
         """ Activates the secondary carriers for CA. Requires the DUT to be
         attached to the primary carrier first.
@@ -335,32 +406,58 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         the UE before starting carrier aggregation.
         """
         self.wait_until_communication_state()
-        self.bts[1].attach_as_secondary_cell()
-        time.sleep(10)
 
-        self.log.info('set lte cdrx for nr nsa scenario')
-        self.bts[0].set_cdrx_config()
-        time.sleep(5)
+        # primary cell is attached, now turn on all secondary cells
+        if self.cmx.secondary_cells:
+            self.cmx.turn_on_secondary_cells()
 
-        self.log.info('Disables mac padding')
-        self.bts[0].set_dl_mac_padding(False)
-        self.bts[1].set_dl_mac_padding(False)
-        time.sleep(5)
+        # if a primary lte and primary nr cell exist, then activate endc on
+        # primary nr cell
+        is_nsa = self.cmx.primary_lte_cell and self.cmx.primary_nr_cell
 
-        self.log.info('configure flexible slots and wait for 5 seconds')
-        self.bts[1].config_flexible_slots()
-        time.sleep(5)
+        if is_nsa:
+            self.cmx.primary_nr_cell.activate_endc()
 
-        self.log.info('disable all ul subframes of the lte cell')
-        self.bts[0].disable_all_ul_subframes()
-        time.sleep(30)
+        # attach secondary lte and nr cells
+        # if nsa then nr cells should be added to secondary cell group
+        for bts in self.cmx.secondary_lte_cells:
+            bts.attach_as_secondary_cell()
 
-        self.log.info('Disables Nr UL slots')
-        self.bts[1].disable_all_ul_slots()
-        time.sleep(5)
+        for bts in self.cmx.secondary_nr_cells:
+            bts.attach_as_secondary_cell(scg=is_nsa)
+
+        if self._config_mode and self._config_mode == ConfigurationMode.Power:
+            self.configure_for_power_measurement()
 
         self.log.info('The radio connectivity is {}'.format(
             self.cmx.dut.state.radio_connectivity))
+
+    def configure_for_power_measurement(self):
+        """ Applies a pre-defined configuration for PDCCH power testing."""
+        self.log.info('set lte cdrx for nr nsa scenario')
+        for bts in self.cmx.lte_cells:
+            bts.set_default_cdrx_config()
+        time.sleep(5)
+
+        self.log.info('Disables mac padding')
+        for bts in self.bts:
+            bts.set_dl_mac_padding(False)
+        time.sleep(5)
+
+        self.log.info('configure flexible slots and wait for 5 seconds')
+        for bts in self.cmx.nr_cells:
+            bts.config_flexible_slots()
+        time.sleep(5)
+
+        self.log.info('disable all ul subframes of the lte cell')
+        for bts in self.cmx.lte_cells:
+            bts.disable_all_ul_subframes()
+        time.sleep(30)
+
+        self.log.info('Disables Nr UL slots')
+        for bts in self.cmx.nr_cells:
+            bts.disable_all_ul_slots()
+        time.sleep(5)
 
     def wait_until_attached(self, timeout=120):
         """ Waits until the DUT is attached to the primary carrier.
@@ -370,6 +467,11 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
                 CellularSimulatorError exception. Default is 120 seconds.
         """
         self.log.info('wait until attached')
+        if len(self.cmx.tracking_areas) > 1:
+            self.log.info('turning off neighbor cells')
+            self.cmx.turn_on_primary_cells()
+            self.cmx.turn_off_neighbor_cells()
+
         self.cmx.wait_until_attached(timeout)
 
     def wait_until_communication_state(self, timeout=120):
@@ -400,6 +502,15 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.log.info('wait for rrc off state')
         return self.cmx.wait_for_rrc_state(cmx500.RrcState.RRC_OFF, timeout)
 
+    def wait_until_quiet(self, timeout=120):
+        """Waits for all pending operations to finish on the simulator.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        self.cmx.network_apply_changes()
+
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
         self.log.info('Bypass simulator detach step for now')
@@ -417,3 +528,11 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     def stop_data_traffic(self):
         """ Stops transmitting data from the instrument to the DUT. """
         self.log.warning('The stop_data_traffic is not implemented yet')
+
+    def send_sms(self, message):
+        """ Sends an SMS message to the DUT.
+
+        Args:
+            message: the SMS message to send.
+        """
+        self.cmx.send_sms(message)

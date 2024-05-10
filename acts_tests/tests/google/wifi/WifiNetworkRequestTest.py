@@ -61,9 +61,10 @@ class WifiNetworkRequestTest(WifiBaseTest):
             self.legacy_configure_ap_and_start(wpa_network=True,
                                                wep_network=True)
         elif "OpenWrtAP" in self.user_params:
+            self.openwrt = self.access_points[0]
             self.configure_openwrt_ap_and_start(open_network=True,
                                                 wpa_network=True,
-                                                wep_network=True)
+                                                wep_network=self.openwrt.is_version_under_20())
 
         asserts.assert_true(
             len(self.reference_networks) > 0,

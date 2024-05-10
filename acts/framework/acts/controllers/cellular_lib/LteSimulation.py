@@ -22,6 +22,13 @@ from acts.controllers.cellular_lib.NrCellConfig import NrCellConfig
 from acts.controllers.cellular_lib import BaseCellularDut
 
 
+class IPAddressType(Enum):
+    """ IP Address types"""
+    IPV4 = "IPV4"
+    IPV6 = "IPV6"
+    IPV4V6 = "IPV4V6"
+
+
 class TransmissionMode(Enum):
     """ Transmission modes for LTE (e.g., TM1, TM4, ...) """
     TM1 = "TM1"
@@ -85,9 +92,11 @@ class LteSimulation(BaseSimulation):
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
 
     # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
-    # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
+    # excellent is set to -62 and also provide a good level for callbox B Tx
+    # power that is limited to some values such as -25 dBm or -30 dBm
     DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {
-        'excellent': -75,
+        'excellent': -62,
+        'great': -75,
         'high': -110,
         'medium': -115,
         'weak': -120,
@@ -523,11 +532,25 @@ class LteSimulation(BaseSimulation):
                 # The band is just a number, so just add it to the list
                 new_cell_list.append(cell)
 
+        # verify mimo mode parameter is provided
+        for cell in new_cell_list:
+            if not LteCellConfig.PARAM_MIMO in cell:
+                raise ValueError(
+                    'The config dictionary must include parameter "{}" with the'
+                    ' mimo mode.'.format(self.PARAM_MIMO))
+
+            if cell[LteCellConfig.PARAM_MIMO] not in (m.value
+                                                      for m in MimoMode):
+                raise ValueError(
+                    'The value of {} must be one of the following:'
+                    '1x1, 2x2 or 4x4.'.format(self.PARAM_MIMO))
+
         # Logs new_cell_list for debug
         self.log.info('new cell list: {}'.format(new_cell_list))
 
         self.simulator.set_band_combination(
-            [c[LteCellConfig.PARAM_BAND] for c in new_cell_list])
+            [c[LteCellConfig.PARAM_BAND] for c in new_cell_list],
+            [MimoMode(c[LteCellConfig.PARAM_MIMO]) for c in new_cell_list])
 
         self.num_carriers = len(new_cell_list)
 
@@ -556,6 +579,19 @@ class LteSimulation(BaseSimulation):
             timer = int(parameters[0][self.PARAM_RRC_STATUS_CHANGE_TIMER])
             self.simulator.set_lte_rrc_state_change_timer(True, timer)
             self.rrc_sc_timer = timer
+
+    def configure_after_started(self):
+        """ Configures after simulation started.
+
+        For some simulators, the additional setup is need after the simulation
+        is started. We could assume the self.configure was run and there
+        self.cell_configs exists and configured.
+        """
+
+        for i in range(len(self.cell_configs)):
+            self.simulator.configure_bts_after_started(
+                self.cell_configs[i], i
+            )
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """ LTE simulation overrides this method so that it can convert from
@@ -926,6 +962,9 @@ class LteSimulation(BaseSimulation):
                     self.cell_configs[bts_index].incorporate(new_config)
 
             self.simulator.lte_attach_secondary_carriers(self.freq_bands)
+
+        # For some simulator, configuration is needed after simulation starts
+        self.configure_after_started()
 
     def send_sms(self, message):
         """ Sends an SMS message to the DUT.

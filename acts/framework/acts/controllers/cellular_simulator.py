@@ -45,11 +45,12 @@ class AbstractCellularSimulator:
         """ Configures the equipment for an LTE simulation. """
         raise NotImplementedError()
 
-    def set_band_combination(self, bands):
-        """ Prepares the test equipment for the indicated CA combination.
+    def set_band_combination(self, bands, mimo_modes):
+        """ Prepares the test equipment for the indicated band/mimo combination.
 
         Args:
             bands: a list of bands represented as ints or strings
+            mimo_modes: a list of LteSimulation.MimoMode to use for each antenna
         """
         raise NotImplementedError()
 
@@ -82,7 +83,50 @@ class AbstractCellularSimulator:
         if isinstance(config, cellular_lib.NrCellConfig.NrCellConfig):
             self.configure_nr_bts(config, bts_index)
 
-    def configure_lte_bts(self, config, bts_index=0):
+    def configure_bts_after_started(self, config, bts_index=0):
+        """ Commands the equipment to setup a base station with the required
+        configuration after simulation started. This method applies
+        configurations for some simulator.
+
+        Args:
+            config: a BaseSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+
+        self.log.info('Configure after simulation started for some simulator')
+
+        if isinstance(config, cellular_lib.LteCellConfig.LteCellConfig):
+            self.configure_lte_bts_after_started(config, bts_index)
+
+        if isinstance(config, cellular_lib.NrCellConfig.NrCellConfig):
+            self.configure_nr_bts_after_started(config, bts_index)
+
+
+    def configure_lte_bts_after_started(self, config, bts_index=0):
+        """ Commands the equipment to further setup a lte base station.
+
+        This is for some simulator where further setup is needed after the
+           simulation started.
+
+        Args:
+            config: a BaseSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+        pass
+
+    def configure_nr_bts_after_started(self, config, bts_index=0):
+        """ Commands the equipment to further setup a lte base station.
+
+        This is for some simulator where further setup is needed after the
+           simulation started.
+
+        Args:
+            config: a BaseSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+        pass
+
+    def configure_lte_bts_base(self, config, bts_index=0):
         """ Commands the equipment to setup an LTE base station with the
         required configuration.
 
@@ -90,6 +134,9 @@ class AbstractCellularSimulator:
             config: an LteSimulation.BtsConfig object.
             bts_index: the base station number.
         """
+        if config.tracking_area:
+            self.set_tracking_area(bts_index, config.tracking_area)
+
         if config.band:
             self.set_band(bts_index, config.band)
 
@@ -121,8 +168,8 @@ class AbstractCellularSimulator:
 
         if config.scheduling_mode:
 
-            if (config.scheduling_mode ==
-                    cellular_lib.LteSimulation.SchedulingMode.STATIC
+            if (config.scheduling_mode
+                    == cellular_lib.LteSimulation.SchedulingMode.STATIC
                     and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
                              and config.ul_mcs)):
                 raise ValueError('When the scheduling mode is set to manual, '
@@ -148,6 +195,23 @@ class AbstractCellularSimulator:
         if config.phich:
             self.set_phich_resource(bts_index, config.phich)
 
+    def configure_lte_bts(self, config, bts_index=0):
+        """ Commands the equipment to setup an LTE base station with the
+        required configuration.
+
+        For some simulator (for example cmx500), cdrx has to be configured after
+        similation started in some cases (for example nsa test). Also, it is
+        fine for this simulator to configure cdrx after the cell starts. Thus,
+        split the method of configure_lte_bts to two parts so that the cdrx
+        configuration could be done after the simulation starts for some
+        simulator.
+
+        Args:
+            config: an LteSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+
+        self.configure_lte_bts_base(config, bts_index=bts_index)
         if config.drx_connected_mode:
             self.set_drx_connected_mode(bts_index, config.drx_connected_mode)
 
@@ -178,6 +242,9 @@ class AbstractCellularSimulator:
             config: an LteSimulation.BtsConfig object.
             bts_index: the base station number.
         """
+        if config.tracking_area:
+            self.set_tracking_area(bts_index, config.tracking_area)
+
         if config.band:
             self.set_band(bts_index, config.band)
 
@@ -192,8 +259,8 @@ class AbstractCellularSimulator:
 
         if config.scheduling_mode:
 
-            if (config.scheduling_mode ==
-                    cellular_lib.LteSimulation.SchedulingMode.STATIC
+            if (config.scheduling_mode
+                    == cellular_lib.LteSimulation.SchedulingMode.STATIC
                     and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
                              and config.ul_mcs)):
                 raise ValueError('When the scheduling mode is set to manual, '
@@ -424,6 +491,38 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             offset: Number in range 0 to (long cycle - 1)
+        """
+        raise NotImplementedError()
+
+    def set_tracking_area(self, bts_index, tac):
+        """ Assigns the cell to a specific tracking area.
+
+        Args:
+            tac: the unique tac to assign the cell to.
+        """
+        raise NotImplementedError()
+
+    def set_apn(self, apn):
+        """ Configures the callbox network Access Point Name.
+
+        Args:
+            apn: the APN name
+        """
+        raise NotImplementedError()
+
+    def set_ip_type(self, ip_type):
+        """ Configures the callbox network IP type.
+
+        Args:
+            ip_type: the network type to use.
+        """
+        raise NotImplementedError()
+
+    def set_mtu(self, mtu):
+        """ Configures the callbox network Maximum Transmission Unit.
+
+        Args:
+            mtu: the MTU size.
         """
         raise NotImplementedError()
 

@@ -114,6 +114,44 @@ RATE_TABLE = {
             ]
         },
     },
+    'EHT': {
+        1: {
+            20: [
+                8.6, 17.2, 25.8, 34.4, 51.6, 68.8, 77.4, 86.0, 103.2, 114.7,
+                129.0, 143.4, 154.9, 172.1, 0, 0
+            ],
+            40: [
+                17.2, 34.4, 51.6, 68.8, 103.2, 137.6, 154.9, 172.1, 206.5, 229.4,
+                258.1, 286.8, 309.7, 344.1, 0, 0
+            ],
+            80: [
+                36.0, 72.1, 108.1, 144.1, 216.2, 288.2, 324.3, 360.3, 432.4,
+                480.4, 540.4, 600.4, 648.5, 720.6, 0, 0
+            ],
+            160: [
+                72.1, 144.1, 216.2, 288.2, 432.4, 576.5, 648.5, 720.6, 864.7,
+                960.7, 1080.9, 1201, 1297.1, 1441.2, 0, 0
+            ]
+        },
+        2: {
+            20: [
+                17.2, 34.4, 51.6, 68.8, 103.2, 137.6, 154.8, 172, 206.4, 229.4,
+                258, 286.8, 309.8, 344.2, 0, 0
+            ],
+            40: [
+                34.4, 68.8, 103.2, 137.6, 206.4, 275.2, 309.6, 344, 412.8,
+                458.8, 516, 573.6, 619.4, 688.2, 0, 0
+            ],
+            80: [
+                72, 144.2, 216.2, 288.2, 432.4, 576.4, 648.6, 720.6, 864.8,
+                960.8, 1080.8, 1200.8, 1297, 1441.2, 0, 0
+            ],
+            160: [
+                144, 288.4, 432.4, 576.4, 864.8, 1152.8, 1297.2, 1441.2,
+                1729.6, 1921.6, 2161.6, 2401.6, 2594.2, 2882.4, 0, 0
+            ]
+        },
+    },
 }
 
 
@@ -343,7 +381,14 @@ def push_firmware(dut, firmware_files):
 
 
 def disable_beamforming(dut):
-    dut.adb.shell('wl txbf 0')
+    dut.adb.shell('wl down')
+    time.sleep(VERY_SHORT_SLEEP)
+    try:
+        dut.adb.shell('wl txbf 0')
+        dut.adb.shell('wl txbf_bfe_cap 0')
+    except:
+        logging.warning('Could not disable beamforming.')
+    dut.adb.shell('wl up')
 
 
 def set_nss_capability(dut, nss):
@@ -366,28 +411,40 @@ def set_chain_mask(dut, chain):
         return
     # Set chain mask if needed
     dut.adb.shell('wl down')
-    time.sleep(VERY_SHORT_SLEEP)
+    time.sleep(SHORT_SLEEP)
     dut.adb.shell('wl txchain 0x{}'.format(chain))
     dut.adb.shell('wl rxchain 0x{}'.format(chain))
     dut.adb.shell('wl up')
+
+    try:
+        curr_tx_chain = int(dut.adb.shell('wl txchain'))
+        curr_rx_chain = int(dut.adb.shell('wl rxchain'))
+    except:
+        curr_tx_chain = -1
+        curr_rx_chain = -1
+    if curr_tx_chain != chain or curr_rx_chain != chain:
+        logging.error('Set chain mask failed.')
 
 
 class LinkLayerStats():
 
     LLSTATS_CMD = 'wl dump ampdu; wl counters;'
     LL_STATS_CLEAR_CMD = 'wl dump_clear ampdu; wl reset_cnts;'
+    BRCM_PHY_LOG_CLEAR_CMD = 'wl dump phycal; wl dump_clear txbf;'
+    BRCM_PHY_LOG_CMD = 'wl phy_rssi_ant; wl phy_snr_ant; wl nrate; wl dump phycal; wl tvpm; wl dump txbf;'
     BW_REGEX = re.compile(r'Chanspec:.+ (?P<bandwidth>[0-9]+)MHz')
     MCS_REGEX = re.compile(r'(?P<count>[0-9]+)\((?P<percent>[0-9]+)%\)')
-    RX_REGEX = re.compile(r'RX (?P<mode>\S+)\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
-                          '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
-    TX_REGEX = re.compile(r'TX (?P<mode>\S+)\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
-                          '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
+    RX_REGEX = re.compile(
+        r'RX (?P<mode>MCS|VHT|HE|EHT)\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
+        '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
+    TX_REGEX = re.compile(
+        r'TX (?P<mode>MCS|VHT|HE|EHT)\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
+        '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
     TX_PER_REGEX = re.compile(
         r'(?P<mode>\S+) PER\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
         '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
-    RX_FCS_REGEX = re.compile(
-        r'rxbadfcs (?P<rx_bad_fcs>[0-9]*).+\n.+goodfcs (?P<rx_good_fcs>[0-9]*)'
-    )
+    RX_GOOD_FCS_REGEX = re.compile(r'goodfcs (?P<rx_good_fcs>[0-9]*)')
+    RX_BAD_FCS_REGEX = re.compile(r'rxbadfcs (?P<rx_bad_fcs>[0-9]*)')
     RX_AGG_REGEX = re.compile(r'rxmpduperampdu (?P<aggregation>[0-9]*)')
     TX_AGG_REGEX = re.compile(r' mpduperampdu (?P<aggregation>[0-9]*)')
     TX_AGG_STOP_REGEX = re.compile(
@@ -405,22 +462,35 @@ class LinkLayerStats():
         self.llstats_enabled = llstats_enabled
         self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
+        self.bandwidth = None
 
     def update_stats(self):
         if self.llstats_enabled:
             try:
                 llstats_output = self.dut.adb.shell(self.LLSTATS_CMD,
                                                     timeout=1)
+
                 self.dut.adb.shell_nb(self.LL_STATS_CLEAR_CMD)
 
                 wl_join = self.dut.adb.shell("wl status")
-                self.bandwidth = int(
-                    re.search(self.BW_REGEX, wl_join).group('bandwidth'))
+                if not self.bandwidth:
+                    self.bandwidth = int(
+                        re.search(self.BW_REGEX, wl_join).group('bandwidth'))
             except:
+                logging.debug('Failed to get counters and ampdu dumps.')
                 llstats_output = ''
+            try:
+                phy_log_output = self.dut.adb.shell(self.BRCM_PHY_LOG_CMD,
+                                                    ignore_status=True,
+                                                    timeout=1)
+                self.dut.adb.shell_nb(self.BRCM_PHY_LOG_CLEAR_CMD)
+            except:
+                logging.debug('Failed to get phy log.')
+                phy_log_output = ''
         else:
             llstats_output = ''
-        self._update_stats(llstats_output)
+            phy_log_output = ''
+        self._update_stats(llstats_output, phy_log_output)
 
     def reset_stats(self):
         self.llstats_cumulative = self._empty_llstats()
@@ -494,33 +564,32 @@ class LinkLayerStats():
         rx_agg_match = re.search(self.RX_AGG_REGEX, llstats_output)
         tx_agg_match = re.search(self.TX_AGG_REGEX, llstats_output)
         tx_agg_stop_match = re.search(self.TX_AGG_STOP_REGEX, llstats_output)
-        rx_fcs_match = re.search(self.RX_FCS_REGEX, llstats_output)
+        rx_good_fcs_match = re.search(self.RX_GOOD_FCS_REGEX, llstats_output)
+        rx_bad_fcs_match = re.search(self.RX_BAD_FCS_REGEX, llstats_output)
 
-        if rx_agg_match and tx_agg_match and tx_agg_stop_match and rx_fcs_match:
-            agg_stop_dict = collections.OrderedDict(
-                rx_aggregation=int(rx_agg_match.group('aggregation')),
-                tx_aggregation=int(tx_agg_match.group('aggregation')),
-                tx_agg_tried=int(tx_agg_stop_match.group('agg_tried')),
-                tx_agg_canceled=int(tx_agg_stop_match.group('agg_canceled')),
-                rx_good_fcs=int(rx_fcs_match.group('rx_good_fcs')),
-                rx_bad_fcs=int(rx_fcs_match.group('rx_bad_fcs')),
-                agg_stop_reason=collections.OrderedDict())
+        mpdu_stats = collections.OrderedDict(
+            rx_aggregation=int(rx_agg_match.group('aggregation'))
+            if rx_agg_match else 0,
+            tx_aggregation=int(tx_agg_match.group('aggregation'))
+            if tx_agg_match else 0,
+            tx_agg_tried=int(tx_agg_stop_match.group('agg_tried'))
+            if tx_agg_stop_match else 0,
+            tx_agg_canceled=int(tx_agg_stop_match.group('agg_canceled'))
+            if tx_agg_stop_match else 0,
+            rx_good_fcs=int(rx_good_fcs_match.group('rx_good_fcs'))
+            if rx_good_fcs_match else 0,
+            rx_bad_fcs=int(rx_bad_fcs_match.group('rx_bad_fcs'))
+            if rx_bad_fcs_match else 0,
+            agg_stop_reason=collections.OrderedDict())
+        if tx_agg_stop_match:
             agg_reason_match = re.finditer(
                 self.TX_AGG_STOP_REASON_REGEX,
                 tx_agg_stop_match.group('agg_stop_reason'))
             for reason_match in agg_reason_match:
-                agg_stop_dict['agg_stop_reason'][reason_match.group(
+                mpdu_stats['agg_stop_reason'][reason_match.group(
                     'reason')] = reason_match.group('value')
 
-        else:
-            agg_stop_dict = collections.OrderedDict(rx_aggregation=0,
-                                                    tx_aggregation=0,
-                                                    tx_agg_tried=0,
-                                                    tx_agg_canceled=0,
-                                                    rx_good_fcs=0,
-                                                    rx_bad_fcs=0,
-                                                    agg_stop_reason=None)
-        return agg_stop_dict
+        return mpdu_stats
 
     def _generate_stats_summary(self, llstats_dict):
         llstats_summary = collections.OrderedDict(common_tx_mcs=None,
@@ -547,13 +616,17 @@ class LinkLayerStats():
         llstats_summary['common_tx_mcs_count'] = numpy.max(tx_mpdu)
         llstats_summary['common_rx_mcs'] = mcs_ids[numpy.argmax(rx_mpdu)]
         llstats_summary['common_rx_mcs_count'] = numpy.max(rx_mpdu)
-        if sum(tx_mpdu) and sum(rx_mpdu):
+        if sum(tx_mpdu):
             llstats_summary['mean_tx_phy_rate'] = numpy.average(
                 phy_rates, weights=tx_mpdu)
-            llstats_summary['mean_rx_phy_rate'] = numpy.average(
-                phy_rates, weights=rx_mpdu)
             llstats_summary['common_tx_mcs_freq'] = (
                 llstats_summary['common_tx_mcs_count'] / sum(tx_mpdu))
+        else:
+            llstats_summary['mean_tx_phy_rate'] = 0
+            llstats_summary['common_tx_mcs_freq'] = 0
+        if sum(rx_mpdu):
+            llstats_summary['mean_rx_phy_rate'] = numpy.average(
+                phy_rates, weights=rx_mpdu)
             llstats_summary['common_rx_mcs_freq'] = (
                 llstats_summary['common_rx_mcs_count'] / sum(rx_mpdu))
             total_rx_frames = llstats_dict['mpdu_stats'][
@@ -561,13 +634,18 @@ class LinkLayerStats():
             if total_rx_frames:
                 llstats_summary['rx_per'] = (
                     llstats_dict['mpdu_stats']['rx_bad_fcs'] /
-                    (total_rx_frames)) * 100
+                    total_rx_frames) * 100
+        else:
+            llstats_summary['mean_rx_phy_rate'] = 0
+            llstats_summary['common_rx_mcs_freq'] = 0
+            llstats_summary['rx_per'] = 0
         return llstats_summary
 
-    def _update_stats(self, llstats_output):
+    def _update_stats(self, llstats_output, phy_log_output):
         self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
         self.llstats_incremental['raw_output'] = llstats_output
+        self.llstats_incremental['phy_log_output'] = phy_log_output
         self.llstats_incremental['mcs_stats'] = self._parse_mcs_stats(
             llstats_output)
         self.llstats_incremental['mpdu_stats'] = self._parse_mpdu_stats(

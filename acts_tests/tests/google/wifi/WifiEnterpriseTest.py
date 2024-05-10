@@ -48,8 +48,10 @@ class WifiEnterpriseTest(WifiBaseTest):
             "ca_cert", "client_cert", "client_key", "eap_identity",
             "eap_password", "invalid_ca_cert", "invalid_client_cert",
             "invalid_client_key", "device_password", "radius_conf_2g",
-            "radius_conf_5g", "radius_conf_pwd", "wifi6_models")
+            "radius_conf_5g", "radius_conf_pwd", "wifi6_models", "sim_supported_models")
+        opt_param_names = ["domain_suffix_match"]
         self.unpack_userparams(required_userparam_names,
+                               opt_param_names,
                                roaming_consortium_ids=None,
                                plmn=None,
                                ocsp=0)
@@ -91,6 +93,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_network_5g[WifiEnums.SSID_KEY],
             Ent.OCSP: self.ocsp,
+            Ent.DOM_SUFFIX_MATCH: self.domain_suffix_match,
         }
         self.config_peap1 = dict(self.config_peap0)
         self.config_peap1[WifiEnums.SSID_KEY] = \
@@ -103,6 +106,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.PRIVATE_KEY_ID: self.client_key,
             Ent.IDENTITY: self.eap_identity,
             Ent.OCSP: self.ocsp,
+            Ent.DOM_SUFFIX_MATCH: self.domain_suffix_match,
         }
         self.config_ttls = {
             Ent.EAP: int(EAP.TTLS),
@@ -112,6 +116,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
             Ent.OCSP: self.ocsp,
+            Ent.DOM_SUFFIX_MATCH: self.domain_suffix_match,
         }
         self.config_pwd = {
             Ent.EAP: int(EAP.PWD),
@@ -343,6 +348,8 @@ class WifiEnterpriseTest(WifiBaseTest):
 
     @test_tracker_info(uuid="b4513f78-a1c4-427f-bfc7-2a6b3da714b5")
     def test_eap_connect_with_config_sim(self):
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "DUT can not equip with mobile SIM card")
         wutils.wifi_connect(self.dut, self.config_sim)
         wutils.verify_11ax_wifi_connection(
             self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
@@ -471,6 +478,8 @@ class WifiEnterpriseTest(WifiBaseTest):
 
     @test_tracker_info(uuid="d7742a2a-85b0-409a-99d8-47711ddc5612")
     def test_eap_connect_negative_with_config_sim(self):
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "DUT can not equip with mobile SIM card")
         config = self.gen_negative_eap_configs(self.config_sim)
         self.eap_negative_connect_logic(config, self.dut)
 
@@ -581,6 +590,8 @@ class WifiEnterpriseTest(WifiBaseTest):
 
     @test_tracker_info(uuid="230cb03e-58bc-41cb-b9b3-7215c2ab2325")
     def test_eap_connect_config_store_with_config_sim(self):
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "DUT can not equip with mobile SIM card")
         self.eap_connect_toggle_wifi(self.config_sim, self.dut)
 
     @test_tracker_info(uuid="dfc3e59c-2309-4598-8c23-bb3fe95ef89f")
@@ -670,6 +681,8 @@ class WifiEnterpriseTest(WifiBaseTest):
 
     @test_tracker_info(uuid="54b96a6c-f366-421c-9a72-80d7ee8fac8f")
     def test_eap_connect_with_config_sim_airplane_on(self):
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "DUT can not equip with mobile SIM card")
         self.log.info("Toggling Airplane mode ON")
         asserts.assert_true(
             acts.utils.force_airplane_mode(self.dut, True),
@@ -724,6 +737,8 @@ class WifiEnterpriseTest(WifiBaseTest):
          2. Move DUT out of range then back in range 3 times
          3. Check that device is connected to network.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "DUT can not equip with mobile SIM card")
         wutils.wifi_connect(self.dut, self.config_sim)
         self.toggle_out_of_range_stress()
 
@@ -736,6 +751,8 @@ class WifiEnterpriseTest(WifiBaseTest):
          3. Move DUT out of range then back in range 3 times
          4. Check that device is connected to network.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "DUT can not equip with mobile SIM card")
         self.log.debug("Toggling Airplane mode ON")
         asserts.assert_true(
             acts.utils.force_airplane_mode(self.dut, True),
@@ -754,6 +771,8 @@ class WifiEnterpriseTest(WifiBaseTest):
          1. Connecting EAP-SIM network
          3. Check that device is connected to network after reboot.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "DUT can not equip with mobile SIM card")
         self.dut.droid.disableDevicePassword(self.device_password)
         wutils.wifi_connect(self.dut, self.config_sim)
         current_network = self.dut.droid.wifiGetConnectionInfo()
@@ -769,6 +788,8 @@ class WifiEnterpriseTest(WifiBaseTest):
         2. Out of PSK's AP1 range.
         3. Connect to EAP-SIM network, then in AP1 range to switch WPA2-PSK network.
         """
+        asserts.skip_if(self.dut.model not in self.sim_supported_models,
+                        "DUT can not equip with mobile SIM card")
         attn1 = self.attenuators[0]
         attn2 = self.attenuators[2]
         if "OpenWrtAP" in self.user_params:

@@ -40,7 +40,7 @@ class WifiP2pBaseTest(BaseTestClass):
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
         required_params = ()
-        optional_params = ("skip_read_factory_mac", "pixel_models", "cnss_diag_file")
+        optional_params = ("skip_read_factory_mac")
         self.unpack_userparams(required_params,
                                optional_params,
                                skip_read_factory_mac=0)
@@ -64,7 +64,7 @@ class WifiP2pBaseTest(BaseTestClass):
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
         asserts.assert_true(self.dut1.droid.wifiP2pIsEnabled(),
                             "DUT1's p2p should be initialized but it didn't")
-        self.dut1.name = "Android_" + self.dut1.serial
+        self.dut1.name = self.dut1.serial
         self.dut1.droid.wifiP2pSetDeviceName(self.dut1.name)
         wutils.wifi_test_device_init(self.dut2)
         utils.sync_device_time(self.dut2)
@@ -72,7 +72,7 @@ class WifiP2pBaseTest(BaseTestClass):
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
         asserts.assert_true(self.dut2.droid.wifiP2pIsEnabled(),
                             "DUT2's p2p should be initialized but it didn't")
-        self.dut2.name = "Android_" + self.dut2.serial
+        self.dut2.name = self.dut2.serial
         self.dut2.droid.wifiP2pSetDeviceName(self.dut2.name)
 
         if len(self.android_devices) > 2:
@@ -85,15 +85,8 @@ class WifiP2pBaseTest(BaseTestClass):
             asserts.assert_true(
                 self.dut3.droid.wifiP2pIsEnabled(),
                 "DUT3's p2p should be initialized but it didn't")
-            self.dut3.name = "Android_" + self.dut3.serial
+            self.dut3.name = self.dut3.serial
             self.dut3.droid.wifiP2pSetDeviceName(self.dut3.name)
-        if hasattr(self, "cnss_diag_file"):
-            if isinstance(self.cnss_diag_file, list):
-                self.cnss_diag_file = self.cnss_diag_file[0]
-            if not os.path.isfile(self.cnss_diag_file):
-                self.cnss_diag_file = os.path.join(
-                    self.user_params[Config.key_config_path.value],
-                    self.cnss_diag_file)
 
     def teardown_class(self):
         self.dut1.droid.wifiP2pClose()
@@ -109,9 +102,7 @@ class WifiP2pBaseTest(BaseTestClass):
             ad.droid.goToSleepNow()
 
     def setup_test(self):
-        if hasattr(self, "cnss_diag_file") and hasattr(self, "pixel_models"):
-            wutils.start_cnss_diags(
-                self.android_devices, self.cnss_diag_file, self.pixel_models)
+        wutils.start_all_wlan_logs(self.android_devices)
         self.tcpdump_proc = []
         if hasattr(self, "android_devices"):
             for ad in self.android_devices:
@@ -122,8 +113,7 @@ class WifiP2pBaseTest(BaseTestClass):
             ad.ed.clear_all_events()
 
     def teardown_test(self):
-        if hasattr(self, "cnss_diag_file") and hasattr(self, "pixel_models"):
-            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
+        wutils.stop_all_wlan_logs(self.android_devices)
         for proc in self.tcpdump_proc:
             nutils.stop_tcpdump(
                     proc[0], proc[1], self.test_name, pull_dump=False)
@@ -143,10 +133,9 @@ class WifiP2pBaseTest(BaseTestClass):
             ad.take_bug_report(test_name, begin_time)
             ad.cat_adb_log(test_name, begin_time)
             wutils.get_ssrdumps(ad)
-        if hasattr(self, "cnss_diag_file") and hasattr(self, "pixel_models"):
-            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
-            for ad in self.android_devices:
-                wutils.get_cnss_diag_log(ad)
+        wutils.stop_all_wlan_logs(self.android_devices)
+        for ad in self.android_devices:
+            wutils.get_wlan_logs(ad)
         for proc in self.tcpdump_proc:
             nutils.stop_tcpdump(proc[0], proc[1], self.test_name)
         self.tcpdump_proc = []

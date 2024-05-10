@@ -13,8 +13,6 @@
 #   limitations under the License.
 
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
-from acts.controllers.cellular_lib import BaseCellularDut
-
 
 class PresetSimulation(BaseSimulation):
     """5G preset simulation.
@@ -47,23 +45,13 @@ class PresetSimulation(BaseSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table,
                          nr_mode)
+        # require param for idle test case
+        self.rrc_sc_timer = 0
 
         # Set to KeySight APN
         log.info('Configuring APN.')
         self.dut.set_apn('Keysight', 'Keysight')
         self.num_carriers = None
-
-        # Enable roaming on the phone
-        self.dut.toggle_data_roaming(True)
-
-        # Force device to LTE only so that it connects faster
-        try:
-            self.dut.set_preferred_network_type(
-                BaseCellularDut.PreferredNetworkType.NR_LTE)
-        except Exception as e:
-            # If this fails the test should be able to run anyways, even if it
-            # takes longer to find the cell.
-            self.log.warning('Setting preferred RAT failed: ' + str(e))
 
     def setup_simulator(self):
         """Do initial configuration in the simulator. """
@@ -99,11 +87,7 @@ class PresetSimulation(BaseSimulation):
             RuntimeError: simulation fail to start
                 due to unable to connect dut and cells.
         """
-
-        try:
-            self.attach()
-        except Exception as exc:
-            raise RuntimeError('Simulation fail to start.') from exc
+        self.attach()
 
     def attach(self):
         """Attach UE to the callbox.
@@ -115,11 +99,9 @@ class PresetSimulation(BaseSimulation):
             RuntimeError: attaching fail
                 due to unable to connect dut and cells.
         """
-        try:
-            self.simulator.wait_until_attached(self.dut, self.attach_timeout,
-                                               self.attach_retries)
-        except Exception as exc:
-            raise RuntimeError('Could not attach to base station.') from exc
+        self.simulator.wait_until_attached(self.dut,
+                                           self.attach_timeout,
+                                           self.attach_retries)
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """Convert RSRP to total signal power from the basestation.

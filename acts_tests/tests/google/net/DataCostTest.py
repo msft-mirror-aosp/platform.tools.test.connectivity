@@ -78,7 +78,7 @@ class DataCostTest(base_test.BaseTestClass):
             ad: Android device object
         """
         ad.log.info("Clear netstats record.")
-        ad.adb.shell("rm /data/system/netstats/*")
+        ad.adb.shell("if [ $(ls /data/system/netstats/) ]; then rm /data/system/netstats/*; fi")
         asserts.assert_equal("", ad.adb.shell("ls /data/system/netstats/"),
                              "Fail to clear netstats.")
         ad.reboot()

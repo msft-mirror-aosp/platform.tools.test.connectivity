@@ -1,5 +1,7 @@
 """Controller for Open WRT access point."""
 
+import ast
+import logging
 import random
 import re
 import time
@@ -8,6 +10,7 @@ from acts import logger
 from acts import signals
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.openwrt_lib import network_settings
+from acts.controllers.openwrt_lib import openwrt_authentication
 from acts.controllers.openwrt_lib import wireless_config
 from acts.controllers.openwrt_lib import wireless_settings_applier
 from acts.controllers.openwrt_lib.openwrt_constants import OpenWrtModelMap as modelmap
@@ -110,14 +113,26 @@ class OpenWrtAP(object):
 
   def __init__(self, config):
     """Initialize AP."""
-    self.ssh_settings = settings.from_config(config["ssh_config"])
-    self.ssh = connection.SshConnection(self.ssh_settings)
+    try:
+      self.ssh_settings = settings.from_config(config["ssh_config"])
+      self.ssh = connection.SshConnection(self.ssh_settings)
+      self.ssh.setup_master_ssh()
+    except connection.Error:
+      logging.info("OpenWrt AP instance is not initialized, use SSH Auth...")
+      openwrt_auth = openwrt_authentication.OpenWrtAuth(
+        self.ssh_settings.hostname)
+      openwrt_auth.generate_rsa_key()
+      openwrt_auth.send_public_key_to_remote_host()
+      self.ssh_settings.identity_file = openwrt_auth.private_key_file
+      self.ssh = connection.SshConnection(self.ssh_settings)
+      self.ssh.setup_master_ssh()
     self.log = logger.create_logger(
-        lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
+      lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
     self.wireless_setting = None
     self.network_setting = network_settings.NetworkSettings(
         self.ssh, self.ssh_settings, self.log)
     self.model = self.get_model_name()
+    self.log.info("OpenWrt AP: %s has been initiated." % self.model)
     if self.model in modelmap.__dict__:
       self.radios = modelmap.__dict__[self.model]
     else:
@@ -166,6 +181,7 @@ class OpenWrtAP(object):
 
   def start_ap(self):
     """Starts the AP with the settings in /etc/config/wireless."""
+    self.log.info("wifi up")
     self.ssh.run("wifi up")
     curr_time = time.time()
     while time.time() < curr_time + WAIT_TIME:
@@ -177,6 +193,7 @@ class OpenWrtAP(object):
 
   def stop_ap(self):
     """Stops the AP."""
+    self.log.info("wifi down")
     self.ssh.run("wifi down")
     curr_time = time.time()
     while time.time() < curr_time + WAIT_TIME:
@@ -630,15 +647,34 @@ class OpenWrtAP(object):
     out = self.ssh.run(SYSTEM_INFO_CMD).stdout.split("\n")
     for line in out:
       if "board_name" in line:
-        model = (line.split()[1].strip("\",").split(","))
-        return "_".join(map(lambda i: i.upper(), model))
+        line = (line.split()[1].strip("\",").split(","))
+        board_name = "_".join(map(lambda i: i.upper(), line))
+        filter_list = "-"
+        for i in filter_list:
+          board_name = str(board_name.replace(i, "_"))
+        return board_name
     self.log.info("Failed to retrieve OpenWrt model information.")
     return None
 
+  def get_version(self):
+    """Get Openwrt version.
+
+    Returns:
+      A string with version number.
+    """
+    out = self.ssh.run(SYSTEM_INFO_CMD).stdout
+    return ast.literal_eval(out)["release"]["version"]
+
+  def is_version_under_20(self):
+    """Boolean if version under 20."""
+    return int(self.get_version().split(".")[0]) < 20
+
   def close(self):
     """Reset wireless and network settings to default and stop AP."""
-    if self.network_setting.config:
+    try:
       self.network_setting.cleanup_network_settings()
+    except AttributeError as e:
+      self.log.warning("OpenWrtAP object has no attribute 'network_setting'")
     if self.wireless_setting:
       self.wireless_setting.cleanup_wireless_settings()
 
@@ -649,4 +685,3 @@ class OpenWrtAP(object):
   def reboot(self):
     """Reboot Openwrt."""
     self.ssh.run("reboot")
-

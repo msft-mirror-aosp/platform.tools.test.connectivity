@@ -33,6 +33,24 @@ GET_FROM_AP = 'get_from_ap'
 ENABLED_MODULATED_DTIM = 'gEnableModulatedDTIM='
 MAX_MODULATED_DTIM = 'gMaxLIModulatedDTIM='
 
+CHRE_WIFI_SCAN_TYPE = {
+    'active': 'active',
+    'passive': 'passive',
+    'activePassiveDfs': 'active_passive_dfs',
+    'noPreference': 'no_preference'
+}
+
+CHRE_WIFI_RADIO_CHAIN = {
+    'lowLatency': 'low_latency',
+    'lowPower': 'low_power',
+    'highAccuracy': 'high_accuracy'
+}
+
+CHRE_WIFI_CHANNEL_SET = {
+    'all': 'all',
+    'nonDfs': 'non_dfs'
+}
+
 
 def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
     """Function to change the DTIM setting in the phone.

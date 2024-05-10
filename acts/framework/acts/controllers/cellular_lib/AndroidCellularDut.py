@@ -52,7 +52,7 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
         Args:
           new_state: True if airplane mode needs to be enabled.
         """
-        tel_utils.toggle_airplane_mode(self.log, self.ad, new_state)
+        tel_utils.toggle_airplane_mode_by_adb(self.log, self.ad, new_state)
 
     def toggle_data_roaming(self, new_state=True):
         """ Enables or disables cellular data roaming.

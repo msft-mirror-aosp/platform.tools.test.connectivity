@@ -43,7 +43,7 @@ class WifiWpa2PersonalTest(WifiBaseTest):
     super().setup_class()
     self.dut = self.android_devices[0]
     req_params = ["roaming_attn"]
-    opt_params = ["pixel_models", "cnss_diag_file"]
+    opt_params = []
     self.unpack_userparams(req_params, opt_params)
 
   def setup_test(self):
@@ -324,6 +324,7 @@ class WifiWpa2PersonalTest(WifiBaseTest):
     wutils.set_attns(self.attenuators,
                      "atten1_off_atten2_off",
                      self.roaming_attn)
+    wutils.wait_for_disconnect(self.dut, 30) # 30s is experimental choice
     wutils.start_wifi_connection_scan_and_ensure_network_not_found(
         self.dut,
         self.wpa2_psk_2g[WifiEnums.SSID_KEY])

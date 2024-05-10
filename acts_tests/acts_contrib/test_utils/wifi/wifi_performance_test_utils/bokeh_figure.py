@@ -19,6 +19,7 @@ import collections
 import itertools
 import json
 import math
+from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 
 
 # Plotting Utilities
@@ -71,6 +72,7 @@ class BokehFigure():
                  title_size='15pt',
                  axis_label_size='12pt',
                  legend_label_size='12pt',
+                 legend_location = 'top_right',
                  axis_tick_label_size='12pt',
                  x_axis_type='auto',
                  sizing_mode='scale_both',
@@ -90,6 +92,7 @@ class BokehFigure():
                 'title_size': title_size,
                 'axis_label_size': axis_label_size,
                 'legend_label_size': legend_label_size,
+                'legend_location': legend_location,
                 'axis_tick_label_size': axis_tick_label_size,
                 'x_axis_type': x_axis_type,
                 'sizing_mode': sizing_mode
@@ -98,8 +101,8 @@ class BokehFigure():
     def init_plot(self):
         self.plot = bokeh.plotting.figure(
             sizing_mode=self.fig_property['sizing_mode'],
-            plot_width=self.fig_property['width'],
-            plot_height=self.fig_property['height'],
+            width=self.fig_property['width'],
+            height=self.fig_property['height'],
             title=self.fig_property['title'],
             tools=self.TOOLS,
             x_axis_type=self.fig_property['x_axis_type'],
@@ -304,7 +307,7 @@ class BokehFigure():
                     axis_label_text_font_size=self.
                     fig_property['axis_label_size']), 'right')
         # plot formatting
-        self.plot.legend.location = 'top_right'
+        self.plot.legend.location = self.fig_property['legend_location']
         self.plot.legend.click_policy = 'hide'
         self.plot.title.text_font_size = self.fig_property['title_size']
         self.plot.legend.label_text_font_size = self.fig_property[
@@ -326,7 +329,7 @@ class BokehFigure():
                                               figure_data=self.figure_data)
         output_file = output_file.replace('.html', '_plot_data.json')
         with open(output_file, 'w') as outfile:
-            json.dump(figure_dict, outfile, indent=4)
+            json.dump(wputils.serialize_dict(figure_dict), outfile, indent=4)
 
     def save_figure(self, output_file, save_json=True):
         """Function to save BokehFigure.

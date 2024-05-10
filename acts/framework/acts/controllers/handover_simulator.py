@@ -22,10 +22,42 @@ class CellularTechnology(Enum):
     """A supported cellular technology to handover to/from."""
     LTE = 'LTE'
     WCDMA = 'WCDMA'
+    NR5G_NSA = "NR5G_NSA"
+    NR5G_SA = "NR5G_SA"
 
 
 class AbstractHandoverSimulator:
     """Simulator for facilitating inter/intra-RAT handovers."""
+    def nr5g_sa_handover(self, band, channel, bandwidth, source_technology):
+        """Performs a handover to 5G SA.
+
+        Args:
+            band: the band of the handover destination
+            channel: the downlink channel of the handover destination
+            bandwidth: the downlink bandwidth of the handover destination
+            source_technology: the source handover technology.
+        """
+        raise NotImplementedError()
+
+    def nr5g_nsa_handover(self, band, channel, bandwidth, secondary_band,
+                          secondary_channel, secondary_bandwidth,
+                          source_technology):
+        """Performs a handover to 5G NSA.
+
+        Args:
+            band: the band of the handover destination primary cell.
+            channel: the downlink channel of the handover destination primary
+                cell.
+            bandwidth: the downlink bandwidth of the handover destination
+                primary cell.
+            secondary_band: the band of the handover destination secondary cell.
+            secondary_channel: the downlink channel of the handover destination
+                secondary cell.
+            secondary_bandwidth: the downlink bandwidth of the handover
+                destination secondary cell.
+            source_technology: the source handover technology.
+        """
+        raise NotImplementedError()
 
     def lte_handover(self, band, channel, bandwidth, source_technology):
         """Performs a handover to LTE.

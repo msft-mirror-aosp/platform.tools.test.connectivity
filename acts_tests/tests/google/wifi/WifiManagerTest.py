@@ -16,6 +16,7 @@
 
 import itertools
 import json
+import logging
 import pprint
 import queue
 import time
@@ -23,10 +24,12 @@ import time
 import acts.base_test
 import acts.signals as signals
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+
 import acts.utils
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
+from acts.controllers.iperf_server import IPerfServer
 from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -70,8 +73,8 @@ class WifiManagerTest(WifiBaseTest):
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
-            "wpa_networks", "wep_networks", "iperf_server_port",
-            "coex_unsafe_channels", "coex_restrictions", "wifi6_models"
+            "wpa_networks", "wep_networks", "coex_unsafe_channels",
+            "coex_restrictions", "wifi6_models"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -79,9 +82,10 @@ class WifiManagerTest(WifiBaseTest):
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(wpa_network=True, wep_network=True)
         elif "OpenWrtAP" in self.user_params:
+            self.openwrt = self.access_points[0]
             self.configure_openwrt_ap_and_start(open_network=True,
                                                 wpa_network=True,
-                                                wep_network=True)
+                                                wep_network=self.openwrt.is_version_under_20())
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -90,6 +94,19 @@ class WifiManagerTest(WifiBaseTest):
         self.wpapsk_5g = self.reference_networks[0]["5g"]
         self.open_network_2g = self.open_network[0]["2g"]
         self.open_network_5g = self.open_network[0]["5g"]
+
+        # Use local host as iperf server.
+        asserts.assert_true(
+          wutils.get_host_public_ipv4_address(),
+          "The host has no public ip address")
+        self.iperf_server_address = wutils.get_host_public_ipv4_address()
+        self.iperf_server_port = wutils.get_iperf_server_port()
+        try:
+          self.iperf_server = IPerfServer(self.iperf_server_port)
+          self.iperf_server.start()
+          logging.info(f"IPerf server started on {self.iperf_server_port}")
+        except Exception as e:
+          raise signals.TestFailure("Failed to start iperf3 server: %s" % e)
 
     def setup_test(self):
         super().setup_test()
@@ -118,9 +135,11 @@ class WifiManagerTest(WifiBaseTest):
                 wutils.disable_wear_wifimediator(self.dut, False)
 
     def teardown_class(self):
+        self.iperf_server.stop()
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
+
 
     """Helper Functions"""
 
@@ -259,17 +278,16 @@ class WifiManagerTest(WifiBaseTest):
         Args:
             params: A tuple of network info and AndroidDevice object.
         """
-        if "iperf_server_address" in self.user_params:
-            wait_time = 5
-            network, ad = params
-            SSID = network[WifiEnums.SSID_KEY]
-            self.log.info("Starting iperf traffic through {}".format(SSID))
-            time.sleep(wait_time)
-            port_arg = "-p {}".format(self.iperf_server_port)
-            success, data = ad.run_iperf_client(self.iperf_server_address,
-                                                port_arg)
-            self.log.debug(pprint.pformat(data))
-            asserts.assert_true(success, "Error occurred in iPerf traffic.")
+        wait_time = 5
+        network, ad = params
+        SSID = network[WifiEnums.SSID_KEY]
+        self.log.info("Starting iperf traffic through {}".format(SSID))
+        time.sleep(wait_time)
+        port_arg = "-p {}".format(self.iperf_server_port)
+        success, data = ad.run_iperf_client(self.iperf_server_address,
+                                            port_arg)
+        self.log.debug(pprint.pformat(data))
+        asserts.assert_true(success, "Error occurred in iPerf traffic.")
 
     def connect_to_wifi_network_toggle_wifi_and_run_iperf(self, params):
         """ Connect to the provided network and then toggle wifi mode and wait
@@ -292,14 +310,10 @@ class WifiManagerTest(WifiBaseTest):
         self.run_iperf_client(params)
 
     def run_iperf(self, iperf_args):
-        if "iperf_server_address" not in self.user_params:
-            self.log.error(("Missing iperf_server_address. "
-                            "Provide one in config."))
-        else:
-            iperf_addr = self.user_params["iperf_server_address"]
-            self.log.info("Running iperf client.")
-            result, data = self.dut.run_iperf_client(iperf_addr, iperf_args)
-            self.log.debug(data)
+        iperf_addr = self.iperf_server_address
+        self.log.info("Running iperf client.")
+        _, data = self.dut.run_iperf_client(iperf_addr, iperf_args)
+        self.log.debug(data)
 
     def run_iperf_rx_tx(self, time, omit=10):
         args = "-p {} -t {} -O 10".format(self.iperf_server_port, time, omit)
@@ -1008,6 +1022,10 @@ class WifiManagerTest(WifiBaseTest):
         1. Ensure the 2GHz WEP network is visible in scan result.
         2. Connect to the network and validate internet connection.
         """
+        asserts.skip_if(
+            hasattr(self, "openwrt") and not self.access_points[0].is_version_under_20(),
+            "OpenWrt no longer support wep network."
+        )
         wutils.connect_to_wifi_network(self.dut, self.wep_networks[0]["2g"])
 
     @test_tracker_info(uuid="1f2d17a2-e92d-43af-966b-3421c0db8620")
@@ -1018,6 +1036,10 @@ class WifiManagerTest(WifiBaseTest):
         1. Ensure the 5GHz WEP network is visible in scan result.
         2. Connect to the network and validate internet connection.
         """
+        asserts.skip_if(
+            hasattr(self, "openwrt") and not self.access_points[0].is_version_under_20(),
+            "OpenWrt no longer support wep network."
+        )
         wutils.connect_to_wifi_network(self.dut, self.wep_networks[0]["5g"])
 
     @test_tracker_info(uuid="4a957952-289d-4657-9882-e1475274a7ff")
