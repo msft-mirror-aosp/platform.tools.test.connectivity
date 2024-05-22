@@ -269,7 +269,7 @@ def get_connected_rssi(dut,
     for key, val in connected_rssi.copy().items():
         if 'data' not in val:
             continue
-        filtered_rssi_values = [x for x in val['data'] if not math.isnan(x)]
+        filtered_rssi_values = [x for x in val['data'] if not (math.isnan(x) or math.isinf(x))]
         if len(filtered_rssi_values) > ignore_samples:
             filtered_rssi_values = filtered_rssi_values[ignore_samples:]
         if filtered_rssi_values:
