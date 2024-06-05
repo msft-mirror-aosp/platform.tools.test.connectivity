@@ -76,61 +76,69 @@ class CellularFr2PeakThroughputTest(CellularThroughputBaseTest):
                 'nr_cell_count']:
             metric_map.update({
                 'nr_min_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']['min_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']
+                ['total']['DL']['min_tput'],
                 'nr_max_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']['max_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']
+                ['total']['DL']['max_tput'],
                 'nr_avg_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']
-                ['average_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']
+                ['total']['DL']['average_tput'],
                 'nr_theoretical_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']
-                ['theoretical_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']
+                ['total']['DL']['theoretical_tput'],
                 'nr_dl_bler':
-                testcase_result['nr_bler_result']['total']['DL']['nack_ratio']
-                * 100,
+                testcase_result['throughput_measurements']['nr_bler_result']
+                ['total']['DL']['nack_ratio'] * 100,
                 'nr_min_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']['min_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']
+                ['total']['UL']['min_tput'],
                 'nr_max_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']['max_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']
+                ['total']['UL']['max_tput'],
                 'nr_avg_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']
-                ['average_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']
+                ['total']['UL']['average_tput'],
                 'nr_theoretical_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']
-                ['theoretical_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']
+                ['total']['UL']['theoretical_tput'],
                 'nr_ul_bler':
-                testcase_result['nr_bler_result']['total']['UL']['nack_ratio']
-                * 100
+                testcase_result['throughput_measurements']['nr_bler_result']
+                ['total']['UL']['nack_ratio'] * 100
             })
         if testcase_data['testcase_params']['endc_combo_config'][
                 'lte_cell_count']:
             metric_map.update({
                 'lte_min_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']['min_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']
+                ['total']['DL']['min_tput'],
                 'lte_max_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']['max_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']
+                ['total']['DL']['max_tput'],
                 'lte_avg_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']
-                ['average_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']
+                ['total']['DL']['average_tput'],
                 'lte_theoretical_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']
-                ['theoretical_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']
+                ['total']['DL']['theoretical_tput'],
                 'lte_dl_bler':
-                testcase_result['lte_bler_result']['total']['DL']['nack_ratio']
-                * 100,
+                testcase_result['throughput_measurements']['lte_bler_result']
+                ['total']['DL']['nack_ratio'] * 100,
                 'lte_min_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']['min_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']
+                ['total']['UL']['min_tput'],
                 'lte_max_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']['max_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']
+                ['total']['UL']['max_tput'],
                 'lte_avg_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']
-                ['average_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']
+                ['total']['UL']['average_tput'],
                 'lte_theoretical_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']
-                ['theoretical_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']
+                ['total']['UL']['theoretical_tput'],
                 'lte_ul_bler':
-                testcase_result['lte_bler_result']['total']['UL']['nack_ratio']
-                * 100
+                testcase_result['throughput_measurements']['lte_bler_result']
+                ['total']['UL']['nack_ratio'] * 100
             })
         if self.publish_testcase_metrics:
             for metric_name, metric_value in metric_map.items():
@@ -170,69 +178,73 @@ class CellularFr2PeakThroughputTest(CellularThroughputBaseTest):
                             'endc_combo_config']['nr_cell_count']:
                         row_dict.update({
                             'NR DL Min. Throughput':
-                            result['nr_tput_result']['total']['DL']
-                            ['min_tput'],
+                            result['throughput_measurements']['nr_tput_result']
+                            ['total']['DL']['min_tput'],
                             'NR DL Max. Throughput':
-                            result['nr_tput_result']['total']['DL']
-                            ['max_tput'],
+                            result['throughput_measurements']['nr_tput_result']
+                            ['total']['DL']['max_tput'],
                             'NR DL Avg. Throughput':
-                            result['nr_tput_result']['total']['DL']
-                            ['average_tput'],
+                            result['throughput_measurements']['nr_tput_result']
+                            ['total']['DL']['average_tput'],
                             'NR DL Theoretical Throughput':
-                            result['nr_tput_result']['total']['DL']
-                            ['theoretical_tput'],
+                            result['throughput_measurements']['nr_tput_result']
+                            ['total']['DL']['theoretical_tput'],
                             'NR UL Min. Throughput':
-                            result['nr_tput_result']['total']['UL']
-                            ['min_tput'],
+                            result['throughput_measurements']['nr_tput_result']
+                            ['total']['UL']['min_tput'],
                             'NR UL Max. Throughput':
-                            result['nr_tput_result']['total']['UL']
-                            ['max_tput'],
+                            result['throughput_measurements']['nr_tput_result']
+                            ['total']['UL']['max_tput'],
                             'NR UL Avg. Throughput':
-                            result['nr_tput_result']['total']['UL']
-                            ['average_tput'],
+                            result['throughput_measurements']['nr_tput_result']
+                            ['total']['UL']['average_tput'],
                             'NR UL Theoretical Throughput':
-                            result['nr_tput_result']['total']['UL']
-                            ['theoretical_tput'],
+                            result['throughput_measurements']['nr_tput_result']
+                            ['total']['UL']['theoretical_tput'],
                             'NR DL BLER (%)':
-                            result['nr_bler_result']['total']['DL']
-                            ['nack_ratio'] * 100,
+                            result['throughput_measurements']['nr_bler_result']
+                            ['total']['DL']['nack_ratio'] * 100,
                             'NR UL BLER (%)':
-                            result['nr_bler_result']['total']['UL']
-                            ['nack_ratio'] * 100
+                            result['throughput_measurements']['nr_bler_result']
+                            ['total']['UL']['nack_ratio'] * 100
                         })
                     if testcase_results['testcase_params'][
                             'endc_combo_config']['lte_cell_count']:
                         row_dict.update({
                             'LTE DL Min. Throughput':
-                            result['lte_tput_result']['total']['DL']
-                            ['min_tput'],
+                            result['throughput_measurements']
+                            ['lte_tput_result']['total']['DL']['min_tput'],
                             'LTE DL Max. Throughput':
-                            result['lte_tput_result']['total']['DL']
-                            ['max_tput'],
+                            result['throughput_measurements']
+                            ['lte_tput_result']['total']['DL']['max_tput'],
                             'LTE DL Avg. Throughput':
-                            result['lte_tput_result']['total']['DL']
-                            ['average_tput'],
+                            result['throughput_measurements']
+                            ['lte_tput_result']['total']['DL']['average_tput'],
                             'LTE DL Theoretical Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']
+                            ['lte_tput_result']['total']['DL']
                             ['theoretical_tput'],
                             'LTE UL Min. Throughput':
-                            result['lte_tput_result']['total']['UL']
-                            ['min_tput'],
+                            result['throughput_measurements']
+                            ['lte_tput_result']['total']['UL']['min_tput'],
                             'LTE UL Max. Throughput':
-                            result['lte_tput_result']['total']['UL']
-                            ['max_tput'],
+                            result['throughput_measurements']
+                            ['lte_tput_result']['total']['UL']['max_tput'],
                             'LTE UL Avg. Throughput':
-                            result['lte_tput_result']['total']['UL']
-                            ['average_tput'],
+                            result['throughput_measurements']
+                            ['lte_tput_result']['total']['UL']['average_tput'],
                             'LTE UL Theoretical Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']
+                            ['lte_tput_result']['total']['UL']
                             ['theoretical_tput'],
                             'LTE DL BLER (%)':
-                            result['lte_bler_result']['total']['DL']
-                            ['nack_ratio'] * 100,
+                            result['throughput_measurements']
+                            ['lte_bler_result']['total']['DL']['nack_ratio'] *
+                            100,
                             'LTE UL BLER (%)':
-                            result['lte_bler_result']['total']['UL']
-                            ['nack_ratio'] * 100
+                            result['throughput_measurements']
+                            ['lte_bler_result']['total']['UL']['nack_ratio'] *
+                            100
                         })
                     writer.writerow(row_dict)
 
@@ -269,26 +281,19 @@ class CellularFr2PeakThroughputTest(CellularThroughputBaseTest):
         lte_scc_list = []
         endc_combo_config['lte_pcc'] = 1
         lte_cell = {
-            'cell_type':
-            'LTE',
-            'cell_number':
-            1,
-            'pcc':
-            1,
-            'band':
-            test_config['lte_band'],
-            'dl_bandwidth':
-            test_config['lte_bandwidth'],
-            'ul_enabled':
-            1,
-            'duplex_mode':
-            test_config['lte_duplex_mode'],
-            'dl_mimo_config':
-            'D{nss}U{nss}'.format(nss=test_config['lte_dl_mimo_config']),
-            'ul_mimo_config':
-            'D{nss}U{nss}'.format(nss=test_config['lte_ul_mimo_config']),
-            'transmission_mode':
-            'TM1'
+            'cell_type': 'LTE',
+            'cell_number': 1,
+            'pcc': 1,
+            'band': self.testclass_params['lte_anchor_band'],
+            'dl_bandwidth': self.testclass_params['lte_anchor_bandwidth'],
+            'ul_enabled': 1,
+            'duplex_mode': self.testclass_params['lte_anchor_duplex_mode'],
+            'dl_mimo_config': 'D{nss}U{nss}'.format(nss=1),
+            'ul_mimo_config': 'D{nss}U{nss}'.format(nss=1),
+            'transmission_mode': 'TM1',
+            'num_codewords': 1,
+            'num_layers': 1,
+            'dl_subframe_allocation': [1] * 10,
         }
         cell_config_list.append(lte_cell)
 
@@ -301,6 +306,8 @@ class CellularFr2PeakThroughputTest(CellularThroughputBaseTest):
                 'NR5G',
                 'cell_number':
                 nr_cell_idx,
+                'nr_cell_type':
+                'NSA',
                 'band':
                 test_config['nr_band'],
                 'duplex_mode':
@@ -334,45 +341,44 @@ class CellularFr2PeakThroughputTest(CellularThroughputBaseTest):
         endc_combo_config['nr_ul_carriers'] = nr_ul_carriers
         endc_combo_config['cell_list'] = cell_config_list
         endc_combo_config['lte_scc_list'] = lte_scc_list
-        endc_combo_config['lte_carriers'] = lte_carriers
+        endc_combo_config['lte_dl_carriers'] = lte_carriers
+        endc_combo_config['lte_ul_carriers'] = lte_carriers
         return endc_combo_config
 
     def generate_test_cases(self, bands, channels, nr_mcs_pair_list,
                             num_dl_cells_list, num_ul_cells_list,
-                            dl_mimo_config, ul_mimo_config, **kwargs):
+                            orientation_list, dl_mimo_config, ul_mimo_config,
+                            **kwargs):
         """Function that auto-generates test cases for a test class."""
         test_cases = []
-        for band, channel, num_ul_cells, num_dl_cells, nr_mcs_pair in itertools.product(
-                bands, channels, num_ul_cells_list, num_dl_cells_list,
-                nr_mcs_pair_list):
+        for orientation, band, channel, num_ul_cells, num_dl_cells, nr_mcs_pair in itertools.product(
+                orientation_list, bands, channels, num_ul_cells_list,
+                num_dl_cells_list, nr_mcs_pair_list):
             if num_ul_cells > num_dl_cells:
                 continue
             if channel not in cputils.PCC_PRESET_MAPPING[band]:
                 continue
             test_config = {
-                'lte_band': 2,
-                'lte_bandwidth': 'BW20',
-                'lte_duplex_mode': 'FDD',
-                'lte_dl_mimo_config': 1,
-                'lte_ul_mimo_config': 1,
                 'nr_band': band,
                 'nr_bandwidth': 'BW100',
                 'nr_duplex_mode': 'TDD',
-                'nr_channel': channel,
+                'nr_cell_type': 'NSA',
+                'nr_channel': cputils.PCC_PRESET_MAPPING[band][channel],
                 'num_dl_cells': num_dl_cells,
                 'num_ul_cells': num_ul_cells,
                 'nr_dl_mimo_config': dl_mimo_config,
                 'nr_ul_mimo_config': ul_mimo_config
             }
             endc_combo_config = self.generate_endc_combo_config(test_config)
-            test_name = 'test_fr2_{}_{}_DL_{}CC_mcs{}_{}x{}_UL_{}CC_mcs{}_{}x{}'.format(
-                band, channel, num_dl_cells, nr_mcs_pair[0], dl_mimo_config,
-                dl_mimo_config, num_ul_cells, nr_mcs_pair[1], ul_mimo_config,
-                ul_mimo_config)
+            test_name = 'test_fr2_{}_{}_{}_DL_{}CC_mcs{}_{}x{}_UL_{}CC_mcs{}_{}x{}'.format(
+                orientation, band, channel, num_dl_cells, nr_mcs_pair[0],
+                dl_mimo_config, dl_mimo_config, num_ul_cells, nr_mcs_pair[1],
+                ul_mimo_config, ul_mimo_config)
             test_params = collections.OrderedDict(
                 endc_combo_config=endc_combo_config,
                 nr_dl_mcs=nr_mcs_pair[0],
                 nr_ul_mcs=nr_mcs_pair[1],
+                orientation=orientation,
                 **kwargs)
             setattr(self, test_name,
                     partial(self._test_throughput_bler, test_params))
@@ -390,20 +396,23 @@ class CellularFr2DlPeakThroughputTest(CellularFr2PeakThroughputTest):
 
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.testclass_params = self.user_params['throughput_test_params']
+        self.testclass_params = self.user_params['fr2_throughput_test_params']
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
                                               ['low', 'mid', 'high'],
-                                              [(16, 4), (27, 4)],
+                                              [(16, 4), (25, 4), (27, 4),
+                                               (28, 4)],
                                               list(range(1, 9)),
                                               list(range(1, 3)),
+                                              ['A_Plane', 'B_Plane'],
                                               force_contiguous_nr_channel=True,
                                               dl_mimo_config=2,
                                               ul_mimo_config=1,
                                               schedule_scenario="FULL_TPUT",
+                                              schedule_slot_ratio=80,
                                               traffic_direction='DL',
                                               transform_precoding=0,
                                               lte_dl_mcs=4,
-                                              lte_dl_mcs_table='QAM256',
+                                              lte_dl_mcs_table='QAM64',
                                               lte_ul_mcs=4,
                                               lte_ul_mcs_table='QAM64')
 
@@ -412,60 +421,56 @@ class CellularFr2CpOfdmUlPeakThroughputTest(CellularFr2PeakThroughputTest):
 
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.testclass_params = self.user_params['throughput_test_params']
+        self.testclass_params = self.user_params['fr2_throughput_test_params']
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
                                               ['low', 'mid', 'high'],
-                                              [(4, 16), (4, 27)], [1], [1],
+                                              [(4, 16), (4, 25), (4, 27),
+                                               (4, 28)], [1], [1],
+                                              ['A_Plane', 'B_Plane'],
                                               force_contiguous_nr_channel=True,
                                               dl_mimo_config=2,
-                                              ul_mimo_config=1,
+                                              ul_mimo_config=2,
                                               schedule_scenario="FULL_TPUT",
+                                              schedule_slot_ratio=80,
                                               traffic_direction='UL',
                                               transform_precoding=0,
                                               lte_dl_mcs=4,
-                                              lte_dl_mcs_table='QAM256',
+                                              lte_dl_mcs_table='QAM64',
                                               lte_ul_mcs=4,
                                               lte_ul_mcs_table='QAM64')
+
         self.tests.extend(
             self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
-                                     ['low', 'mid', 'high'],
-                                     [(4, 16), (4, 27)], [1], [1],
+                                     ['low', 'mid', 'high'], [(4, 16), (4, 25),
+                                                              (4, 27),
+                                                              (4, 28)], [2],
+                                     [2], ['A_Plane', 'B_Plane'],
                                      force_contiguous_nr_channel=True,
                                      dl_mimo_config=2,
                                      ul_mimo_config=2,
                                      schedule_scenario="FULL_TPUT",
+                                     schedule_slot_ratio=80,
                                      traffic_direction='UL',
                                      transform_precoding=0,
                                      lte_dl_mcs=4,
-                                     lte_dl_mcs_table='QAM256',
+                                     lte_dl_mcs_table='QAM64',
                                      lte_ul_mcs=4,
                                      lte_ul_mcs_table='QAM64'))
         self.tests.extend(
             self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
-                                     ['low', 'mid', 'high'],
-                                     [(4, 16), (4, 27)], [2], [2],
+                                     ['low', 'mid', 'high'], [(4, 16), (4, 25),
+                                                              (4, 27),
+                                                              (4, 28)], [4],
+                                     [4], ['A_Plane', 'B_Plane'],
                                      force_contiguous_nr_channel=True,
                                      dl_mimo_config=2,
                                      ul_mimo_config=2,
                                      schedule_scenario="FULL_TPUT",
+                                     schedule_slot_ratio=80,
                                      traffic_direction='UL',
                                      transform_precoding=0,
                                      lte_dl_mcs=4,
-                                     lte_dl_mcs_table='QAM256',
-                                     lte_ul_mcs=4,
-                                     lte_ul_mcs_table='QAM64'))
-        self.tests.extend(
-            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
-                                     ['low', 'mid', 'high'],
-                                     [(4, 16), (4, 27)], [4], [4],
-                                     force_contiguous_nr_channel=True,
-                                     dl_mimo_config=2,
-                                     ul_mimo_config=2,
-                                     schedule_scenario="FULL_TPUT",
-                                     traffic_direction='UL',
-                                     transform_precoding=0,
-                                     lte_dl_mcs=4,
-                                     lte_dl_mcs_table='QAM256',
+                                     lte_dl_mcs_table='QAM64',
                                      lte_ul_mcs=4,
                                      lte_ul_mcs_table='QAM64'))
 
@@ -474,60 +479,56 @@ class CellularFr2DftsOfdmUlPeakThroughputTest(CellularFr2PeakThroughputTest):
 
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.testclass_params = self.user_params['throughput_test_params']
+        self.testclass_params = self.user_params['fr2_throughput_test_params']
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
                                               ['low', 'mid', 'high'],
-                                              [(4, 16), (4, 27)], [1], [1],
+                                              [(4, 16), (4, 25), (4, 27),
+                                               (4, 28)], [1], [1],
+                                              ['A_Plane', 'B_Plane'],
                                               force_contiguous_nr_channel=True,
                                               dl_mimo_config=2,
                                               ul_mimo_config=1,
                                               schedule_scenario="FULL_TPUT",
+                                              schedule_slot_ratio=80,
                                               traffic_direction='UL',
                                               transform_precoding=1,
                                               lte_dl_mcs=4,
-                                              lte_dl_mcs_table='QAM256',
+                                              lte_dl_mcs_table='QAM64',
                                               lte_ul_mcs=4,
                                               lte_ul_mcs_table='QAM64')
+
         self.tests.extend(
             self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
-                                     ['low', 'mid', 'high'],
-                                     [(4, 16), (4, 27)], [1], [1],
+                                     ['low', 'mid', 'high'], [(4, 16), (4, 25),
+                                                              (4, 27),
+                                                              (4, 28)], [2],
+                                     [2], ['A_Plane', 'B_Plane'],
                                      force_contiguous_nr_channel=True,
                                      dl_mimo_config=2,
                                      ul_mimo_config=2,
                                      schedule_scenario="FULL_TPUT",
+                                     schedule_slot_ratio=80,
                                      traffic_direction='UL',
                                      transform_precoding=1,
                                      lte_dl_mcs=4,
-                                     lte_dl_mcs_table='QAM256',
+                                     lte_dl_mcs_table='QAM64',
                                      lte_ul_mcs=4,
                                      lte_ul_mcs_table='QAM64'))
         self.tests.extend(
             self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
-                                     ['low', 'mid', 'high'],
-                                     [(4, 16), (4, 27)], [2], [2],
+                                     ['low', 'mid', 'high'], [(4, 16), (4, 25),
+                                                              (4, 27),
+                                                              (4, 28)], [4],
+                                     [4], ['A_Plane', 'B_Plane'],
                                      force_contiguous_nr_channel=True,
                                      dl_mimo_config=2,
                                      ul_mimo_config=2,
                                      schedule_scenario="FULL_TPUT",
+                                     schedule_slot_ratio=80,
                                      traffic_direction='UL',
                                      transform_precoding=1,
                                      lte_dl_mcs=4,
-                                     lte_dl_mcs_table='QAM256',
-                                     lte_ul_mcs=4,
-                                     lte_ul_mcs_table='QAM64'))
-        self.tests.extend(
-            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
-                                     ['low', 'mid', 'high'],
-                                     [(4, 16), (4, 27)], [4], [4],
-                                     force_contiguous_nr_channel=True,
-                                     dl_mimo_config=2,
-                                     ul_mimo_config=2,
-                                     schedule_scenario="FULL_TPUT",
-                                     traffic_direction='UL',
-                                     transform_precoding=1,
-                                     lte_dl_mcs=4,
-                                     lte_dl_mcs_table='QAM256',
+                                     lte_dl_mcs_table='QAM64',
                                      lte_ul_mcs=4,
                                      lte_ul_mcs_table='QAM64'))
 
@@ -543,19 +544,20 @@ class CellularFr2DlFrequencySweepPeakThroughputTest(
 
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.testclass_params = self.user_params['throughput_test_params']
+        self.testclass_params = self.user_params['fr2_throughput_test_params']
         self.tests = self.generate_test_cases(
             ['N257', 'N258', 'N260', 'N261'],
             self.user_params['throughput_test_params']['frequency_sweep'],
-            [(16, 4), (27, 4)],
+            [(16, 4), (27, 4)], ['A_Plane', 'B_Plane'],
             force_contiguous_nr_channel=False,
             dl_mimo_config=2,
             ul_mimo_config=1,
             schedule_scenario="FULL_TPUT",
+            schedule_slot_ratio=80,
             traffic_direction='DL',
             transform_precoding=0,
             lte_dl_mcs=4,
-            lte_dl_mcs_table='QAM256',
+            lte_dl_mcs_table='QAM64',
             lte_ul_mcs=4,
             lte_ul_mcs_table='QAM64')
 
@@ -572,11 +574,6 @@ class CellularFr2DlFrequencySweepPeakThroughputTest(
             if channel not in cputils.PCC_PRESET_MAPPING[band]:
                 continue
             test_config = {
-                'lte_band': 2,
-                'lte_bandwidth': 'BW20',
-                'lte_duplex_mode': 'FDD',
-                'lte_dl_mimo_config': 1,
-                'lte_ul_mimo_config': 1,
                 'nr_band': band,
                 'nr_bandwidth': 'BW100',
                 'nr_duplex_mode': 'TDD',

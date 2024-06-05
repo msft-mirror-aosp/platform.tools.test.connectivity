@@ -572,6 +572,12 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.sta_dut.droid.wakeLockAcquireDim()
         else:
             self.sta_dut.go_to_sleep()
+        # Enable Tune Code
+        band = self.access_point.band_lookup_by_channel(testcase_params['channel'])
+        if 'tune_code' in self.testbed_params:
+            if int(self.testbed_params['tune_code']['manual_tune_code']):
+                self.log.info('Tune Code forcing enabled in config file')
+                wputils.write_antenna_tune_code(self.sta_dut, self.testbed_params['tune_code'][band])
         if (wputils.validate_network(self.sta_dut,
                                      testcase_params['test_network']['SSID'])
                 and not self.testclass_params.get('force_reconnect', 0)):
@@ -1097,6 +1103,19 @@ class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
             self.generate_test_cases(['6g37'], ['bw160'],
                                      list(range(0, 360, 45)), ['TCP'], ['DL']))
 
+class WifiOtaRvr_SampleChannel_UDP_Test(WifiOtaRvrTest):
+
+    def __init__(self, controllers):
+        WifiOtaRvrTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases([6], ['bw20'],
+                                              list(range(0, 360, 45)), ['UDP'],
+                                              ['DL', 'UL'])
+        self.tests.extend(
+            self.generate_test_cases([36, 149], ['bw80', 'bw160'],
+                                     list(range(0, 360, 45)), ['UDP'], ['DL', 'UL']))
+        self.tests.extend(
+            self.generate_test_cases(['6g37'], ['bw160'],
+                                     list(range(0, 360, 45)), ['UDP'], ['DL', 'UL']))
 
 class WifiOtaRvr_SingleOrientation_Test(WifiOtaRvrTest):
 

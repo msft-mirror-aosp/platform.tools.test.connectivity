@@ -17,7 +17,7 @@
 import acts_contrib.test_utils.power.cellular.cellular_pdcch_power_test as cppt
 
 
-class PowerTelPdcch_FddBandSweep_Test(cppt.PowerTelPDCCHTest):
+class PowerTelPdcch_BandSweep_Test(cppt.PowerTelPDCCHTest):
 
     def test_lte_pdcch_b1(self):
         self.power_pdcch_test()
@@ -40,11 +40,41 @@ class PowerTelPdcch_FddBandSweep_Test(cppt.PowerTelPDCCHTest):
     def test_lte_pdcch_b8(self):
         self.power_pdcch_test()
 
-    def test_lte_pdcch_b11(self):
-        self.power_pdcch_test()
-
     def test_lte_pdcch_b12(self):
         self.power_pdcch_test()
 
     def test_lte_pdcch_b13(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b14(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b18(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b19(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b20(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b28(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b30(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b40(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b41(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b42(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b66(self):
+        self.power_pdcch_test()
+
+    def test_lte_pdcch_b71(self):
         self.power_pdcch_test()

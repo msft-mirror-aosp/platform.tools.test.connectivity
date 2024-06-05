@@ -109,11 +109,12 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
     logcat_msg = "E WifiKeyStore: Invalid certificate type for Suite-B"
     try:
       wutils.connect_to_wifi_network(self.dut, config)
-      asserts.fail("WPA3 Ent worked with insecure RSA key. Expected to fail.")
     except:
       logcat_search = self.dut.search_logcat(logcat_msg)
       self.log.info("Logcat search results: %s" % logcat_search)
       asserts.assert_true(logcat_search, "No valid error msg in logcat")
+    else:
+      asserts.fail("WPA3 Ent worked with insecure RSA key. Expected to fail.")
 
   @test_tracker_info(uuid="897957f3-de25-4f9e-b6fc-9d7798ea1e6f")
   def test_connect_to_wpa3_enterprise_expired_rsa_cert(self):
@@ -130,11 +131,12 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
     logcat_msg = "E WifiKeyStore: Invalid certificate type for Suite-B"
     try:
       wutils.connect_to_wifi_network(self.dut, config)
-      asserts.fail("WPA3 Ent worked with expired cert. Expected to fail.")
     except:
       logcat_search = self.dut.search_logcat(logcat_msg)
       self.log.info("Logcat search results: %s" % logcat_search)
       asserts.assert_true(logcat_search, "No valid error msg in logcat")
+    else:
+      asserts.fail("WPA3 Ent worked with expired cert. Expected to fail.")
 
   @test_tracker_info(uuid="f7ab30e2-f2b5-488a-8667-e45920fc24d1")
   def test_connect_to_wpa3_enterprise_corrupted_rsa_cert(self):
@@ -150,9 +152,10 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
     }
     try:
       wutils.connect_to_wifi_network(self.dut, config)
-      asserts.fail("WPA3 Ent worked with corrupted cert. Expected to fail.")
     except:
       asserts.explicit_pass("Connection failed as expected.")
+    else:
+      asserts.fail("WPA3 Ent worked with corrupted cert. Expected to fail.")
 
   @test_tracker_info(uuid="f934f388-dc0b-4c78-a493-026b798c15ca")
   def test_connect_to_wpa3_enterprise_unsigned_rsa_cert(self):
@@ -168,9 +171,10 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
     }
     try:
       wutils.connect_to_wifi_network(self.dut, config)
-      asserts.fail("WPA3 Ent worked with unsigned cert. Expected to fail.")
     except:
       asserts.explicit_pass("Connection failed as expected.")
+    else:
+      asserts.fail("WPA3 Ent worked with unsigned cert. Expected to fail.")
 
   @test_tracker_info(uuid="7082dc90-5eb8-4055-8b48-b555a98a837a")
   def test_connect_to_wpa3_enterprise_wrong_domain_rsa_cert(self):
@@ -186,9 +190,10 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
     }
     try:
       wutils.connect_to_wifi_network(self.dut, config)
-      asserts.fail("WPA3 Ent worked with unsigned cert. Expected to fail.")
     except:
       asserts.explicit_pass("Connection failed as expected.")
+    else:
+      asserts.fail("WPA3 Ent worked with unsigned cert. Expected to fail.")
 
   @test_tracker_info(uuid="9ad5fd82-f115-42c3-b8e8-520144485ea1")
   def test_network_selection_status_for_wpa3_ent_wrong_domain_rsa_cert(self):
@@ -204,10 +209,11 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
     }
     try:
       wutils.connect_to_wifi_network(self.dut, config)
-      asserts.fail("WPA3 Ent worked with corrupted cert. Expected to fail.")
     except:
       asserts.assert_true(
           self.dut.droid.wifiIsNetworkTemporaryDisabledForNetwork(config),
           "WiFi network is not temporary disabled.")
       asserts.explicit_pass(
           "Connection failed with correct network selection status.")
+    else:
+      asserts.fail("WPA3 Ent worked with corrupted cert. Expected to fail.")

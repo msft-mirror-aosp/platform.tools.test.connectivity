@@ -77,6 +77,9 @@ class WifiBaseTest(BaseTestClass):
                     self.country_code = WifiEnums.CountryCode.US
                 wutils.set_wifi_country_code(ad, self.country_code)
 
+                if hasattr(self, "flagged_features"):
+                    self._configure_flagged_features(ad, self.flagged_features)
+
     def setup_test(self):
         if (hasattr(self, "android_devices")):
             wutils.start_all_wlan_logs(self.android_devices)
@@ -972,3 +975,18 @@ class WifiBaseTest(BaseTestClass):
                 asserts.fail(self.result_detail)
 
         return _safe_wrap_test_case
+
+    def _configure_flagged_features(self, ad, flagged_features):
+        for module, features in flagged_features.items():
+            for feature in features:
+                value = flagged_features[module][feature].lower()
+                if value not in ("true", "false"):
+                    raise ValueError("Invalid flag value for %s %s." % (module, feature))
+                self.log.info("Setting feature flag %s %s to %s." % (module, feature, value))
+                adb_put_command = "device_config put %s %s %s" % (module, feature, value)
+                adb_get_command = "device_config get %s %s" % (module, feature)
+                ad.adb.shell(adb_put_command)
+                value_from_get = ad.adb.shell(adb_get_command)
+
+                if type(value_from_get) != str or value_from_get.lower() != value:
+                    raise RuntimeError("Failed to set flag value to %s (now is %s) for %s %s." % (value, value_from_get, module, feature))

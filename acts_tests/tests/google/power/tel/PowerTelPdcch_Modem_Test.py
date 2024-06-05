@@ -54,3 +54,11 @@ class PowerTelPdcch_Modem_Test(cppt.PowerTelPDCCHTest):
     def test_nr_1_n78_pdcch(self):
         self.display_name_test_case = 'PDCCH 5G Sub6 NSA'
         self.power_pdcch_test()
+
+    def test_nr_1_n48_cdrx(self):
+        self.display_name_test_case = 'CDRx 5G Sub6 NSA'
+        self.power_pdcch_test()
+
+    def test_nr_1_n78_cdrx(self):
+        self.display_name_test_case = 'CDRx 5G Sub6 NSA'
+        self.power_pdcch_test()

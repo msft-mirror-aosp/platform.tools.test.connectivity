@@ -472,7 +472,7 @@ class AndroidDevice:
         # Re-create the new adb and sl4a services
         self.register_service(services.AdbLogcatService(self))
         self.register_service(services.Sl4aService(self))
-        self.adb.wait_for_device()
+        self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
         self.terminate_all_sessions()
         self.start_services()
 
@@ -539,7 +539,9 @@ class AndroidDevice:
         info = {
             "build_id": build_id,
             "incremental_build_id": incremental_build_id,
-            "build_type": self.adb.getprop("ro.build.type")
+            "build_type": self.adb.getprop("ro.build.type"),
+            "build_date": self.adb.getprop("ro.build.date.utc"),
+            "baseband": self.adb.getprop("gsm.version.baseband")
         }
         return info
 
@@ -555,7 +557,8 @@ class AndroidDevice:
             'model': self.model,
             'build_info': self.build_info,
             'user_added_info': self._user_added_device_info,
-            'flavor': self.flavor
+            'flavor': self.flavor,
+            'revision': self.adb.getprop('ro.revision')
         }
         return info
 
@@ -1432,6 +1435,9 @@ class AndroidDevice:
             return
         self.stop_services()
         self.log.info("Rebooting")
+        # Send ACTION_SHUTDOWN broadcast and wait for registered services
+        self.adb.shell("am broadcast -a android.intent.action.ACTION_SHUTDOWN")
+        time.sleep(5)
         self.adb.reboot()
 
         timeout_start = time.time()

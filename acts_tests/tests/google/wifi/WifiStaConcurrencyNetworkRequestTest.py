@@ -59,16 +59,14 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
-        asserts.abort_class_if(
-                self.dut.model not in self.sta_concurrency_supported_models,
-                "Device %s doesn't support STA+STA, skipping tests")
-
-        asserts.abort_class_if(
+    def setup_test(self):
+        asserts.skip_if(
+          self.dut.model not in self.sta_concurrency_supported_models,
+          "Device %s doesn't support STA+STA, skipping tests")
+        asserts.skip_if(
             "OpenWrtAP" not in self.user_params,
             "Setup doesn't support OpenWrt AP, skipping tests")
 
-
-    def setup_test(self):
         super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()

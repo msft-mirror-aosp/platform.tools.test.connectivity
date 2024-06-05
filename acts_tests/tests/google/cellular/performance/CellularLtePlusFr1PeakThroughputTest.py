@@ -66,60 +66,60 @@ class CellularLtePlusFr1PeakThroughputTest(CellularThroughputBaseTest):
                 'nr_cell_count']:
             metric_map.update({
                 'nr_min_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']['min_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['DL']['min_tput'],
                 'nr_max_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']['max_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['DL']['max_tput'],
                 'nr_avg_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['DL']
                 ['average_tput'],
                 'nr_theoretical_dl_tput':
-                testcase_result['nr_tput_result']['total']['DL']
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['DL']
                 ['theoretical_tput'],
                 'nr_dl_bler':
-                testcase_result['nr_bler_result']['total']['DL']['nack_ratio']
+                testcase_result['throughput_measurements']['nr_bler_result']['total']['DL']['nack_ratio']
                 * 100,
                 'nr_min_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']['min_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['UL']['min_tput'],
                 'nr_max_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']['max_tput'],
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['UL']['max_tput'],
                 'nr_avg_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['UL']
                 ['average_tput'],
                 'nr_theoretical_dl_tput':
-                testcase_result['nr_tput_result']['total']['UL']
+                testcase_result['throughput_measurements']['nr_tput_result']['total']['UL']
                 ['theoretical_tput'],
                 'nr_ul_bler':
-                testcase_result['nr_bler_result']['total']['UL']['nack_ratio']
+                testcase_result['throughput_measurements']['nr_bler_result']['total']['UL']['nack_ratio']
                 * 100
             })
         if testcase_data['testcase_params']['endc_combo_config'][
                 'lte_cell_count']:
             metric_map.update({
                 'lte_min_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']['min_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['DL']['min_tput'],
                 'lte_max_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']['max_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['DL']['max_tput'],
                 'lte_avg_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['DL']
                 ['average_tput'],
                 'lte_theoretical_dl_tput':
-                testcase_result['lte_tput_result']['total']['DL']
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['DL']
                 ['theoretical_tput'],
                 'lte_dl_bler':
-                testcase_result['lte_bler_result']['total']['DL']['nack_ratio']
+                testcase_result['throughput_measurements']['lte_bler_result']['total']['DL']['nack_ratio']
                 * 100,
                 'lte_min_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']['min_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['UL']['min_tput'],
                 'lte_max_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']['max_tput'],
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['UL']['max_tput'],
                 'lte_avg_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['UL']
                 ['average_tput'],
                 'lte_theoretical_dl_tput':
-                testcase_result['lte_tput_result']['total']['UL']
+                testcase_result['throughput_measurements']['lte_tput_result']['total']['UL']
                 ['theoretical_tput'],
                 'lte_ul_bler':
-                testcase_result['lte_bler_result']['total']['UL']['nack_ratio']
+                testcase_result['throughput_measurements']['lte_bler_result']['total']['UL']['nack_ratio']
                 * 100
             })
         if self.publish_testcase_metrics:
@@ -160,68 +160,68 @@ class CellularLtePlusFr1PeakThroughputTest(CellularThroughputBaseTest):
                             'endc_combo_config']['nr_cell_count']:
                         row_dict.update({
                             'NR DL Min. Throughput':
-                            result['nr_tput_result']['total']['DL']
+                            result['throughput_measurements']['nr_tput_result']['total']['DL']
                             ['min_tput'],
                             'NR DL Max. Throughput':
-                            result['nr_tput_result']['total']['DL']
+                            result['throughput_measurements']['nr_tput_result']['total']['DL']
                             ['max_tput'],
                             'NR DL Avg. Throughput':
-                            result['nr_tput_result']['total']['DL']
+                            result['throughput_measurements']['nr_tput_result']['total']['DL']
                             ['average_tput'],
                             'NR DL Theoretical Throughput':
-                            result['nr_tput_result']['total']['DL']
+                            result['throughput_measurements']['nr_tput_result']['total']['DL']
                             ['theoretical_tput'],
                             'NR UL Min. Throughput':
-                            result['nr_tput_result']['total']['UL']
+                            result['throughput_measurements']['nr_tput_result']['total']['UL']
                             ['min_tput'],
                             'NR UL Max. Throughput':
-                            result['nr_tput_result']['total']['UL']
+                            result['throughput_measurements']['nr_tput_result']['total']['UL']
                             ['max_tput'],
                             'NR UL Avg. Throughput':
-                            result['nr_tput_result']['total']['UL']
+                            result['throughput_measurements']['nr_tput_result']['total']['UL']
                             ['average_tput'],
                             'NR UL Theoretical Throughput':
-                            result['nr_tput_result']['total']['UL']
+                            result['throughput_measurements']['nr_tput_result']['total']['UL']
                             ['theoretical_tput'],
                             'NR DL BLER (%)':
-                            result['nr_bler_result']['total']['DL']
+                            result['throughput_measurements']['nr_bler_result']['total']['DL']
                             ['nack_ratio'] * 100,
                             'NR UL BLER (%)':
-                            result['nr_bler_result']['total']['UL']
+                            result['throughput_measurements']['nr_bler_result']['total']['UL']
                             ['nack_ratio'] * 100
                         })
                     if testcase_results['testcase_params'][
                             'endc_combo_config']['lte_cell_count']:
                         row_dict.update({
                             'LTE DL Min. Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']['lte_tput_result']['total']['DL']
                             ['min_tput'],
                             'LTE DL Max. Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']['lte_tput_result']['total']['DL']
                             ['max_tput'],
                             'LTE DL Avg. Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']['lte_tput_result']['total']['DL']
                             ['average_tput'],
                             'LTE DL Theoretical Throughput':
-                            result['lte_tput_result']['total']['DL']
+                            result['throughput_measurements']['lte_tput_result']['total']['DL']
                             ['theoretical_tput'],
                             'LTE UL Min. Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']['lte_tput_result']['total']['UL']
                             ['min_tput'],
                             'LTE UL Max. Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']['lte_tput_result']['total']['UL']
                             ['max_tput'],
                             'LTE UL Avg. Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']['lte_tput_result']['total']['UL']
                             ['average_tput'],
                             'LTE UL Theoretical Throughput':
-                            result['lte_tput_result']['total']['UL']
+                            result['throughput_measurements']['lte_tput_result']['total']['UL']
                             ['theoretical_tput'],
                             'LTE DL BLER (%)':
-                            result['lte_bler_result']['total']['DL']
+                            result['throughput_measurements']['lte_bler_result']['total']['DL']
                             ['nack_ratio'] * 100,
                             'LTE UL BLER (%)':
-                            result['lte_bler_result']['total']['UL']
+                            result['throughput_measurements']['lte_bler_result']['total']['UL']
                             ['nack_ratio'] * 100
                         })
                     writer.writerow(row_dict)
@@ -259,97 +259,9 @@ class CellularLteFr1EndcPeakThroughputTest(CellularLtePlusFr1PeakThroughputTest
         self.tests = self.generate_test_cases([(27, 4), (4, 27)],
                                               lte_dl_mcs_table='QAM256',
                                               lte_ul_mcs_table='QAM256',
-                                              transform_precoding=0)
-
-    def generate_endc_combo_config(self, endc_combo_str):
-        """Function to generate ENDC combo config from combo string
-
-        Args:
-            endc_combo_str: ENDC combo descriptor (e.g. B48A[4];A[1]+N5A[2];A[1])
-        Returns:
-            endc_combo_config: dictionary with all ENDC combo settings
-        """
-        endc_combo_str = endc_combo_str.replace(' ', '')
-        endc_combo_list = endc_combo_str.split('+')
-        endc_combo_list = [combo.split(';') for combo in endc_combo_list]
-        endc_combo_config = collections.OrderedDict()
-        cell_config_list = list()
-        lte_cell_count = 0
-        nr_cell_count = 0
-        lte_scc_list = []
-        nr_dl_carriers = []
-        nr_ul_carriers = []
-        lte_carriers = []
-
-        for cell in endc_combo_list:
-            cell_config = {}
-            dl_config_str = cell[0]
-            dl_config_regex = re.compile(
-                r'(?P<cell_type>[B,N])(?P<band>[0-9]+)(?P<bandwidth_class>[A-Z])\[(?P<mimo_config>[0-9])\]'
-            )
-            dl_config_match = re.match(dl_config_regex, dl_config_str)
-            if dl_config_match.group('cell_type') == 'B':
-                cell_config['cell_type'] = 'LTE'
-                lte_cell_count = lte_cell_count + 1
-                cell_config['cell_number'] = lte_cell_count
-                if cell_config['cell_number'] == 1:
-                    cell_config['pcc'] = 1
-                    endc_combo_config['lte_pcc'] = cell_config['cell_number']
-                else:
-                    cell_config['pcc'] = 0
-                    lte_scc_list.append(cell_config['cell_number'])
-                cell_config['band'] = dl_config_match.group('band')
-                cell_config['duplex_mode'] = 'FDD' if int(
-                    cell_config['band']
-                ) in cputils.DUPLEX_MODE_TO_BAND_MAPPING['LTE'][
-                    'FDD'] else 'TDD'
-                cell_config['dl_mimo_config'] = 'D{nss}U{nss}'.format(
-                    nss=dl_config_match.group('mimo_config'))
-                if int(dl_config_match.group('mimo_config')) == 1:
-                    cell_config['transmission_mode'] = 'TM1'
-                elif int(dl_config_match.group('mimo_config')) == 2:
-                    cell_config['transmission_mode'] = 'TM2'
-                else:
-                    cell_config['transmission_mode'] = 'TM3'
-                lte_carriers.append(cell_config['cell_number'])
-            else:
-                cell_config['cell_type'] = 'NR5G'
-                nr_cell_count = nr_cell_count + 1
-                cell_config['cell_number'] = nr_cell_count
-                nr_dl_carriers.append(cell_config['cell_number'])
-                cell_config['band'] = 'N' + dl_config_match.group('band')
-                cell_config['duplex_mode'] = 'FDD' if cell_config[
-                    'band'] in cputils.DUPLEX_MODE_TO_BAND_MAPPING['NR5G'][
-                        'FDD'] else 'TDD'
-                cell_config['subcarrier_spacing'] = 'MU0' if cell_config[
-                    'duplex_mode'] == 'FDD' else 'MU1'
-                cell_config['dl_mimo_config'] = 'N{nss}X{nss}'.format(
-                    nss=dl_config_match.group('mimo_config'))
-
-            cell_config['dl_bandwidth_class'] = dl_config_match.group(
-                'bandwidth_class')
-            cell_config['dl_bandwidth'] = 'BW20'
-            cell_config['ul_enabled'] = len(cell) > 1
-            if cell_config['ul_enabled']:
-                ul_config_str = cell[1]
-                ul_config_regex = re.compile(
-                    r'(?P<bandwidth_class>[A-Z])\[(?P<mimo_config>[0-9])\]')
-                ul_config_match = re.match(ul_config_regex, ul_config_str)
-                cell_config['ul_bandwidth_class'] = ul_config_match.group(
-                    'bandwidth_class')
-                cell_config['ul_mimo_config'] = 'N{nss}X{nss}'.format(
-                    nss=ul_config_match.group('mimo_config'))
-                if cell_config['cell_type'] == 'NR5G':
-                    nr_ul_carriers.append(cell_config['cell_number'])
-            cell_config_list.append(cell_config)
-        endc_combo_config['lte_cell_count'] = lte_cell_count
-        endc_combo_config['nr_cell_count'] = nr_cell_count
-        endc_combo_config['nr_dl_carriers'] = nr_dl_carriers
-        endc_combo_config['nr_ul_carriers'] = nr_ul_carriers
-        endc_combo_config['cell_list'] = cell_config_list
-        endc_combo_config['lte_scc_list'] = lte_scc_list
-        endc_combo_config['lte_carriers'] = lte_carriers
-        return endc_combo_config
+                                              transform_precoding=0,
+                                              schedule_scenario='FULL_TPUT',
+                                              schedule_slot_ratio=80)
 
     def generate_test_cases(self, mcs_pair_list, **kwargs):
         test_cases = []
@@ -359,9 +271,9 @@ class CellularLteFr1EndcPeakThroughputTest(CellularLtePlusFr1PeakThroughputTest
             for endc_combo_str in endc_combos:
                 if endc_combo_str[0] == '#':
                     continue
-                endc_combo_config = self.generate_endc_combo_config(
+                endc_combo_config = cputils.generate_endc_combo_config_from_string(
                     endc_combo_str)
-                special_chars = '+[];\n'
+                special_chars = '+[]=;,\n'
                 for char in special_chars:
                     endc_combo_str = endc_combo_str.replace(char, '_')
                 endc_combo_str = endc_combo_str.replace('__', '_')
@@ -382,99 +294,7 @@ class CellularLteFr1EndcPeakThroughputTest(CellularLtePlusFr1PeakThroughputTest
         return test_cases
 
 
-class CellularSingleCellThroughputTest(CellularLtePlusFr1PeakThroughputTest):
-    """Base Class to test single cell LTE or LTE/FR1"""
-
-    def generate_endc_combo_config(self, test_config):
-        """Function to generate ENDC combo config from CSV test config
-
-        Args:
-            test_config: dict containing ENDC combo config from CSV
-        Returns:
-            endc_combo_config: dictionary with all ENDC combo settings
-        """
-        endc_combo_config = collections.OrderedDict()
-        lte_cell_count = 0
-        nr_cell_count = 0
-        lte_scc_list = []
-        nr_dl_carriers = []
-        nr_ul_carriers = []
-        lte_carriers = []
-
-        cell_config_list = []
-        if test_config['lte_band']:
-            lte_cell = {
-                'cell_type':
-                'LTE',
-                'cell_number':
-                1,
-                'pcc':
-                1,
-                'band':
-                test_config['lte_band'],
-                'dl_bandwidth':
-                test_config['lte_bandwidth'],
-                'ul_enabled':
-                1,
-                'duplex_mode':
-                test_config['lte_duplex_mode'],
-                'dl_mimo_config':
-                'D{nss}U{nss}'.format(nss=test_config['lte_dl_mimo_config']),
-                'ul_mimo_config':
-                'D{nss}U{nss}'.format(nss=test_config['lte_ul_mimo_config'])
-            }
-            if int(test_config['lte_dl_mimo_config']) == 1:
-                lte_cell['transmission_mode'] = 'TM1'
-            elif int(test_config['lte_dl_mimo_config']) == 2:
-                lte_cell['transmission_mode'] = 'TM2'
-            else:
-                lte_cell['transmission_mode'] = 'TM3'
-            cell_config_list.append(lte_cell)
-            endc_combo_config['lte_pcc'] = 1
-            lte_cell_count = 1
-            lte_carriers = [1]
-
-        if test_config['nr_band']:
-            nr_cell = {
-                'cell_type':
-                'NR5G',
-                'cell_number':
-                1,
-                'band':
-                test_config['nr_band'],
-                'duplex_mode':
-                test_config['nr_duplex_mode'],
-                'dl_mimo_config':
-                'N{nss}X{nss}'.format(nss=test_config['nr_dl_mimo_config']),
-                'dl_bandwidth_class':
-                'A',
-                'dl_bandwidth':
-                test_config['nr_bandwidth'],
-                'ul_enabled':
-                1,
-                'ul_bandwidth_class':
-                'A',
-                'ul_mimo_config':
-                'N{nss}X{nss}'.format(nss=test_config['nr_ul_mimo_config']),
-                'subcarrier_spacing':
-                'MU0' if test_config['nr_scs'] == '15' else 'MU1'
-            }
-            cell_config_list.append(nr_cell)
-            nr_cell_count = 1
-            nr_dl_carriers = [1]
-            nr_ul_carriers = [1]
-
-        endc_combo_config['lte_cell_count'] = lte_cell_count
-        endc_combo_config['nr_cell_count'] = nr_cell_count
-        endc_combo_config['nr_dl_carriers'] = nr_dl_carriers
-        endc_combo_config['nr_ul_carriers'] = nr_ul_carriers
-        endc_combo_config['cell_list'] = cell_config_list
-        endc_combo_config['lte_scc_list'] = lte_scc_list
-        endc_combo_config['lte_carriers'] = lte_carriers
-        return endc_combo_config
-
-
-class CellularFr1SingleCellPeakThroughputTest(CellularSingleCellThroughputTest
+class CellularFr1SingleCellPeakThroughputTest(CellularLtePlusFr1PeakThroughputTest
                                               ):
     """Class to test single cell FR1 NSA mode"""
 
@@ -489,6 +309,8 @@ class CellularFr1SingleCellPeakThroughputTest(CellularSingleCellThroughputTest
         self.tests = self.generate_test_cases(
             nr_mcs_pair_list=[(27, 4), (4, 27)],
             nr_channel_list=['LOW', 'MID', 'HIGH'],
+            schedule_scenario='FULL_TPUT',
+            schedule_slot_ratio=80,
             transform_precoding=0,
             lte_dl_mcs=4,
             lte_dl_mcs_table='QAM256',
@@ -505,9 +327,9 @@ class CellularFr1SingleCellPeakThroughputTest(CellularSingleCellThroughputTest
                     test_configs, nr_channel_list, nr_mcs_pair_list):
                 if int(test_config['skip_test']):
                     continue
-                endc_combo_config = self.generate_endc_combo_config(
+                endc_combo_config = cputils.generate_endc_combo_config_from_csv_row(
                     test_config)
-                endc_combo_config['cell_list'][1]['channel'] = nr_channel
+                endc_combo_config['cell_list'][endc_combo_config['lte_cell_count']]['channel'] = nr_channel
                 test_name = 'test_fr1_{}_{}_dl_mcs{}_ul_mcs{}'.format(
                     test_config['nr_band'], nr_channel.lower(), nr_mcs_pair[0],
                     nr_mcs_pair[1])
@@ -522,7 +344,7 @@ class CellularFr1SingleCellPeakThroughputTest(CellularSingleCellThroughputTest
         return test_cases
 
 
-class CellularLteSingleCellPeakThroughputTest(CellularSingleCellThroughputTest
+class CellularLteSingleCellPeakThroughputTest(CellularLtePlusFr1PeakThroughputTest
                                               ):
     """Class to test single cell LTE"""
 
@@ -548,7 +370,7 @@ class CellularLteSingleCellPeakThroughputTest(CellularSingleCellThroughputTest
                     test_configs, lte_mcs_pair_list):
                 if int(test_config['skip_test']):
                     continue
-                endc_combo_config = self.generate_endc_combo_config(
+                endc_combo_config = cputils.generate_endc_combo_config_from_csv_row(
                     test_config)
                 test_name = 'test_lte_B{}_dl_{}_mcs{}_ul_{}_mcs{}'.format(
                     test_config['lte_band'], lte_mcs_pair[0][0],

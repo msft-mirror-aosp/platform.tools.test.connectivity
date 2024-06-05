@@ -16,6 +16,7 @@
 import logging
 import os
 import re
+import socket
 import time
 import urllib.request
 
@@ -531,7 +532,7 @@ def stop_usb_tethering(ad):
     ad.log.info("Stopping USB Tethering")
     ad.stop_services()
     ad.adb.shell(USB_CHARGE_MODE)
-    ad.adb.wait_for_device()
+    ad.adb.wait_for_device(timeout=120)
     ad.start_services()
 
 

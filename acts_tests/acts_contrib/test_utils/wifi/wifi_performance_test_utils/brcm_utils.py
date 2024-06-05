@@ -114,6 +114,44 @@ RATE_TABLE = {
             ]
         },
     },
+    'EHT': {
+        1: {
+            20: [
+                8.6, 17.2, 25.8, 34.4, 51.6, 68.8, 77.4, 86.0, 103.2, 114.7,
+                129.0, 143.4, 154.9, 172.1, 0, 4.3
+            ],
+            40: [
+                17.2, 34.4, 51.6, 68.8, 103.2, 137.6, 154.9, 172.1, 206.5, 229.4,
+                258.1, 286.8, 309.7, 344.1, 0, 8.6
+            ],
+            80: [
+                36.0, 72.1, 108.1, 144.1, 216.2, 288.2, 324.3, 360.3, 432.4,
+                480.4, 540.4, 600.4, 648.5, 720.6, 8.6, 18.0
+            ],
+            160: [
+                72.1, 144.1, 216.2, 288.2, 432.4, 576.5, 648.5, 720.6, 864.7,
+                960.7, 1080.9, 1201, 1297.1, 1441.2, 18.0, 36.0
+            ]
+        },
+        2: {
+            20: [
+                17.2, 34.4, 51.6, 68.8, 103.2, 137.6, 154.8, 172, 206.4, 229.4,
+                258, 286.8, 309.8, 344.2, 0, 0
+            ],
+            40: [
+                34.4, 68.8, 103.2, 137.6, 206.4, 275.2, 309.6, 344, 412.8,
+                458.8, 516, 573.6, 619.4, 688.2, 0, 0
+            ],
+            80: [
+                72, 144.2, 216.2, 288.2, 432.4, 576.4, 648.6, 720.6, 864.8,
+                960.8, 1080.8, 1200.8, 1297, 1441.2, 0, 0
+            ],
+            160: [
+                144, 288.4, 432.4, 576.4, 864.8, 1152.8, 1297.2, 1441.2,
+                1729.6, 1921.6, 2161.6, 2401.6, 2594.2, 2882.4, 0, 0
+            ]
+        },
+    },
 }
 
 
@@ -231,7 +269,7 @@ def get_connected_rssi(dut,
     for key, val in connected_rssi.copy().items():
         if 'data' not in val:
             continue
-        filtered_rssi_values = [x for x in val['data'] if not math.isnan(x)]
+        filtered_rssi_values = [x for x in val['data'] if not (math.isnan(x) or math.isinf(x))]
         if len(filtered_rssi_values) > ignore_samples:
             filtered_rssi_values = filtered_rssi_values[ignore_samples:]
         if filtered_rssi_values:
@@ -343,7 +381,14 @@ def push_firmware(dut, firmware_files):
 
 
 def disable_beamforming(dut):
-    dut.adb.shell('wl txbf 0')
+    dut.adb.shell('wl down')
+    time.sleep(VERY_SHORT_SLEEP)
+    try:
+        dut.adb.shell('wl txbf 0')
+        dut.adb.shell('wl txbf_bfe_cap 0')
+    except:
+        logging.warning('Could not disable beamforming.')
+    dut.adb.shell('wl up')
 
 
 def set_nss_capability(dut, nss):
@@ -366,16 +411,27 @@ def set_chain_mask(dut, chain):
         return
     # Set chain mask if needed
     dut.adb.shell('wl down')
-    time.sleep(VERY_SHORT_SLEEP)
+    time.sleep(SHORT_SLEEP)
     dut.adb.shell('wl txchain 0x{}'.format(chain))
     dut.adb.shell('wl rxchain 0x{}'.format(chain))
     dut.adb.shell('wl up')
+
+    try:
+        curr_tx_chain = int(dut.adb.shell('wl txchain'))
+        curr_rx_chain = int(dut.adb.shell('wl rxchain'))
+    except:
+        curr_tx_chain = -1
+        curr_rx_chain = -1
+    if curr_tx_chain != chain or curr_rx_chain != chain:
+        logging.error('Set chain mask failed.')
 
 
 class LinkLayerStats():
 
     LLSTATS_CMD = 'wl dump ampdu; wl counters;'
     LL_STATS_CLEAR_CMD = 'wl dump_clear ampdu; wl reset_cnts;'
+    BRCM_PHY_LOG_CLEAR_CMD = 'wl dump phycal; wl dump_clear txbf;'
+    BRCM_PHY_LOG_CMD = 'wl phy_rssi_ant; wl phy_snr_ant; wl nrate; wl dump phycal; wl tvpm; wl dump txbf;'
     BW_REGEX = re.compile(r'Chanspec:.+ (?P<bandwidth>[0-9]+)MHz')
     MCS_REGEX = re.compile(r'(?P<count>[0-9]+)\((?P<percent>[0-9]+)%\)')
     RX_REGEX = re.compile(
@@ -413,6 +469,7 @@ class LinkLayerStats():
             try:
                 llstats_output = self.dut.adb.shell(self.LLSTATS_CMD,
                                                     timeout=1)
+
                 self.dut.adb.shell_nb(self.LL_STATS_CLEAR_CMD)
 
                 wl_join = self.dut.adb.shell("wl status")
@@ -420,10 +477,20 @@ class LinkLayerStats():
                     self.bandwidth = int(
                         re.search(self.BW_REGEX, wl_join).group('bandwidth'))
             except:
+                logging.debug('Failed to get counters and ampdu dumps.')
                 llstats_output = ''
+            try:
+                phy_log_output = self.dut.adb.shell(self.BRCM_PHY_LOG_CMD,
+                                                    ignore_status=True,
+                                                    timeout=1)
+                self.dut.adb.shell_nb(self.BRCM_PHY_LOG_CLEAR_CMD)
+            except:
+                logging.debug('Failed to get phy log.')
+                phy_log_output = ''
         else:
             llstats_output = ''
-        self._update_stats(llstats_output)
+            phy_log_output = ''
+        self._update_stats(llstats_output, phy_log_output)
 
     def reset_stats(self):
         self.llstats_cumulative = self._empty_llstats()
@@ -574,10 +641,11 @@ class LinkLayerStats():
             llstats_summary['rx_per'] = 0
         return llstats_summary
 
-    def _update_stats(self, llstats_output):
+    def _update_stats(self, llstats_output, phy_log_output):
         self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
         self.llstats_incremental['raw_output'] = llstats_output
+        self.llstats_incremental['phy_log_output'] = phy_log_output
         self.llstats_incremental['mcs_stats'] = self._parse_mcs_stats(
             llstats_output)
         self.llstats_incremental['mpdu_stats'] = self._parse_mpdu_stats(

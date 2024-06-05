@@ -26,10 +26,8 @@ class PowerTelAirplaneModeTest(PB.PowerCellularPresetLabBaseTest):
         # Allow airplane mode to propagate
         time.sleep(3)
 
-        # Measure power
-        self.collect_power_data()
-        # Check if power measurement is within the required values
-        self.pass_fail_check(self.avg_current)
+        # Measure power and check against threshold
+        self.collect_power_data_and_validate()
 
 class PowerTelAirplaneMode_Test(PowerTelAirplaneModeTest):
     def test_airplane_mode(self):

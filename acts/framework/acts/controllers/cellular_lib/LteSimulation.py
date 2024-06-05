@@ -92,9 +92,11 @@ class LteSimulation(BaseSimulation):
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
 
     # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
-    # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
+    # excellent is set to -62 and also provide a good level for callbox B Tx
+    # power that is limited to some values such as -25 dBm or -30 dBm
     DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {
         'excellent': -62,
+        'great': -75,
         'high': -110,
         'medium': -115,
         'weak': -120,
@@ -578,6 +580,19 @@ class LteSimulation(BaseSimulation):
             self.simulator.set_lte_rrc_state_change_timer(True, timer)
             self.rrc_sc_timer = timer
 
+    def configure_after_started(self):
+        """ Configures after simulation started.
+
+        For some simulators, the additional setup is need after the simulation
+        is started. We could assume the self.configure was run and there
+        self.cell_configs exists and configured.
+        """
+
+        for i in range(len(self.cell_configs)):
+            self.simulator.configure_bts_after_started(
+                self.cell_configs[i], i
+            )
+
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """ LTE simulation overrides this method so that it can convert from
         RSRP to total signal power transmitted from the basestation.
@@ -947,6 +962,9 @@ class LteSimulation(BaseSimulation):
                     self.cell_configs[bts_index].incorporate(new_config)
 
             self.simulator.lte_attach_secondary_carriers(self.freq_bands)
+
+        # For some simulator, configuration is needed after simulation starts
+        self.configure_after_started()
 
     def send_sms(self, message):
         """ Sends an SMS message to the DUT.
