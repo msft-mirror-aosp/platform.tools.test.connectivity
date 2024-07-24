@@ -14,9 +14,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from collections import defaultdict
+import datetime
 import os
 import re
+import time
+import functools
 import fnmatch
+from statistics import mean
 
 from acts import asserts
 from acts import signals
@@ -60,6 +65,8 @@ from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 
 
+_PPS_KICKIN_WAITING_TIME_IN_SECOND = 30
+
 class GnssFunctionTest(BaseTestClass):
     """ GNSS Function Tests"""
     def setup_class(self):
@@ -71,6 +78,7 @@ class GnssFunctionTest(BaseTestClass):
                       "supl_hs_criteria",
                       "standalone_cs_criteria",
                       "wearable_reboot_hs_criteria",
+                      "first_satellite_criteria",
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
                       "gnss_init_error_list",
@@ -99,6 +107,7 @@ class GnssFunctionTest(BaseTestClass):
         gutils.enable_supl_mode(self.ad)
         gutils.enable_vendor_orbit_assistance_data(self.ad)
         gutils.disable_ramdump(self.ad)
+        gutils.enable_compact_and_particle_fusion_log(self.ad)
 
     def setup_test(self):
         log_current_epoch_time(self.ad, "test_start_time")
@@ -141,6 +150,13 @@ class GnssFunctionTest(BaseTestClass):
             set_wifi_and_bt_scanning(self.ad, True)
         log_current_epoch_time(self.ad, "test_end_time")
 
+    def keep_logs(self):
+        # for debug cs is faster than ws issue
+        test_name = self.test_name
+        self.ad.take_bug_report(test_name, self.begin_time)
+        get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+        get_tcpdump_log(self.ad, test_name, self.begin_time)
+
     def on_fail(self, test_name, begin_time):
         if self.collect_logs:
             self.ad.take_bug_report(test_name, begin_time)
@@ -164,7 +180,7 @@ class GnssFunctionTest(BaseTestClass):
         path = self.user_params.get("radio_image")
         if isinstance(path, list):
             path = path[0]
-        if "dev/null" in path:
+        if not path or "dev/null" in path:
             self.ad.log.info("Radio image path is not defined in Test flag.")
             return False
         for path_key in os.listdir(path):
@@ -245,8 +261,19 @@ class GnssFunctionTest(BaseTestClass):
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.log.info("Turn airplane mode on")
         toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
+        """
+        The change for arguments here is for b/277667310
+        Randomized interval is used for breaking CS GLNS only fix sequence.
+        """
         gutils.run_ttff_via_gtw_gpstool(
-            self.ad, mode, criteria, self.ttff_test_cycle, self.pixel_lab_location)
+            self.ad,
+            mode,
+            criteria,
+            self.ttff_test_cycle,
+            self.pixel_lab_location,
+            raninterval=True,
+            mininterval=15,
+            maxinterval=20,)
 
     """ Test Cases """
 
@@ -276,44 +303,88 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true(all(overall_test_result),
                             "SUPL fail after system server restart.")
 
-    def test_cs_ttff_after_gps_service_restart(self):
-        """Verify cs ttff after modem silent reboot / GPS daemons restart.
+    def test_recovery_and_location_time_after_gnss_services_restart(self):
+        """Verify gpsd recover time after gpsd being killed.
 
         Steps:
-            1. Trigger modem crash by adb/Restart GPS daemons by killing PID.
-            2. Wait 1 minute for modem to recover.
-            3. TTFF Cold Start for 3 iteration.
-            4. Repeat Step 1. to Step 3. for 5 times.
+            1. Start GPS tracking
+            2. Restart GPS daemons by killing PID.
+            3. Waiting for GPS service to restart
+            4. Waiting for the first fixed
+            4. Re-run steps 1~4 for 5 times.
 
         Expected Results:
-            All SUPL TTFF Cold Start results should be within supl_cs_criteria.
+            1. The time GPSd services take to restart must be within 3 seconds.
+            2. Location fix time must be within supl_hs_criteria
         """
-        supl_ssr_test_result_all = []
+        if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Skip the test due to Qualcomm chipset")
+        test_times = 5
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for times in range(1, 6):
-            begin_time = get_current_epoch_time()
-            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
-                test_info = "Modem SSR"
-                gutils.gnss_trigger_modem_ssr_by_mds(self.ad)
-            else:
-                test_info = "restarting GPS daemons"
-                gutils.restart_gps_daemons(self.ad)
-            if not verify_internet_connection(self.ad.log, self.ad, retries=3,
-                                                expected_state=True):
-                raise signals.TestFailure("Fail to connect to LTE network.")
-            gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
-            ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                    self.pixel_lab_location)
-            supl_ssr_test_result = gutils.check_ttff_data(
-                self.ad, ttff_data, ttff_mode="Cold Start",
-                criteria=self.supl_cs_criteria)
-            self.ad.log.info("SUPL after %s test %d times -> %s" % (
-                test_info, times, supl_ssr_test_result))
-            supl_ssr_test_result_all.append(supl_ssr_test_result)
+        satellite_times = defaultdict(list)
+        location_fix_times = defaultdict(list)
 
-        asserts.assert_true(all(supl_ssr_test_result_all),
-                            "TTFF fails to reach designated criteria")
+        kill_functions = (
+            gutils.get_gps_process_and_kill_function_by_vendor(self.ad))
+        for time in range(1, test_times+1):
+            self.ad.log.info("Performing test times %d", time)
+            first_fixed_time = process_gnss_by_gtw_gpstool(
+                self.ad,
+                criteria=self.supl_hs_criteria,
+                clear_data=False)
+
+            begin_time = int(first_fixed_time.timestamp() * 1000)
+            self.ad.log.info("Start tracking")
+            gutils.wait_n_mins_for_gnss_tracking(self.ad,
+                                                 begin_time,
+                                                 testtime=0.5,
+                                                 ignore_hal_crash=False)
+
+
+            for num, (process, kill_function) in enumerate(kill_functions.items()):
+                kill_start_time = kill_function()
+                first_gpsd_update_time = (gutils.get_gpsd_update_time(
+                    self.ad,
+                    kill_start_time))
+                self.ad.log.info("Resume tracking ... ")
+                gutils.wait_n_mins_for_gnss_tracking(self.ad,
+                                                     begin_time,
+                                                     testtime=num+1,
+                                                     ignore_hal_crash=True)
+
+                location_fix_time = (gutils.
+                                     get_location_fix_time_via_gpstool_log(
+                                         self.ad, first_gpsd_update_time))
+
+                satellite_times[process].append(first_gpsd_update_time - kill_start_time)
+                location_fix_times[process].append(location_fix_time - first_gpsd_update_time)
+                # gpsd recovery time : Time between gpsd killed to first satellite update.
+                self.ad.log.info("%s recovery time : %d ms",
+                                 process, (first_gpsd_update_time - kill_start_time))
+                # TTFF Hot Start : Time between first satellite update to first location fix.
+                self.ad.log.info("TTFF Hot Start %d ms",
+                                 (location_fix_time - first_gpsd_update_time))
+            start_gnss_by_gtw_gpstool(self.ad, state=False)
+
+        for num, process in enumerate(kill_functions):
+            prop_basename = gutils.UPLOAD_TO_SPONGE_PREFIX + f"{process}_recovery_time_"
+            self.ad.log.info(prop_basename + "AVG %d",
+                             mean(satellite_times[process]))
+            self.ad.log.info(prop_basename + "MAX %d",
+                             max(satellite_times[process]))
+            prop_basename = gutils.UPLOAD_TO_SPONGE_PREFIX + f"{process}_ttff_hs_"
+            self.ad.log.info(prop_basename + "AVG %d",
+                             mean(location_fix_times[process]))
+            self.ad.log.info(prop_basename + "MAX %d",
+                             max(location_fix_times[process]))
+            asserts.assert_true(mean(satellite_times[process])/1000 <=
+                                self.first_satellite_criteria,
+                                f"{process} takes more than {self.first_satellite_criteria}"
+                                "seconds in average to recover")
+            asserts.assert_true(mean(location_fix_times[process])/1000 <=
+                                self.supl_hs_criteria,
+                                f"Location fix time is more than {self.supl_hs_criteria}"
+                                "seconds in average")
 
     def test_gnss_one_hour_tracking(self):
         """Verify GNSS tracking performance of signal strength and position
@@ -666,9 +737,9 @@ class GnssFunctionTest(BaseTestClass):
                               validate_gnssstatus=True)
 
     def test_location_update_after_resuming_from_deep_suspend(self):
-        """Verify the GPS location reported after resume from suspend mode
+        """Verify the GPS location reported after resume from deep doze mode
         1. Enable GPS location report for 1 min to make sure the GPS is working
-        2. Force DUT into deep suspend mode for a while(3 times with 15s interval)
+        2. Force DUT into deep doze mode for 60s
         3. Enable GPS location report for 5 mins
         4. Check the report frequency
         5. Check the location fix rate
@@ -678,18 +749,18 @@ class GnssFunctionTest(BaseTestClass):
         gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                       testtime=gps_enable_minutes)
         result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
-        self.ad.log.debug("Location report details before suspend")
+        self.ad.log.debug("Location report details before deep doze")
         self.ad.log.debug(result)
         gutils.validate_location_fix_rate(self.ad, result, run_time=gps_enable_minutes,
                                           fix_rate_criteria=0.95)
 
-        gutils.deep_suspend_device(self.ad)
+        gutils.enter_deep_doze_mode(self.ad, lasting_time_in_seconds=60)
 
         gps_enable_minutes = 5
         gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                       testtime=gps_enable_minutes)
         result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
-        self.ad.log.debug("Location report details after suspend")
+        self.ad.log.debug("Location report details after deep doze")
         self.ad.log.debug(result)
 
         location_report_time = list(result.keys())
@@ -812,3 +883,14 @@ class GnssFunctionTest(BaseTestClass):
 
         gutils.stop_pixel_logger(self.ad)
 
+    def test_the_diff_of_gps_clock_and_elapsed_realtime_should_be_stable(self):
+        gutils.start_pixel_logger(self.ad)
+        with gutils.full_gnss_measurement(self.ad):
+            first_fixed_time = gnss_tracking_via_gtw_gpstool(
+                self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
+                testtime=5, meas_flag=True)
+        gutils.stop_pixel_logger(self.ad)
+        start_time = first_fixed_time + datetime.timedelta(
+            seconds=time.timezone + _PPS_KICKIN_WAITING_TIME_IN_SECOND)
+        self.ad.log.debug("Start time is %s" % start_time)
+        gutils.validate_diff_of_gps_clock_elapsed_realtime(self.ad, start_time)

@@ -27,8 +27,8 @@ BROWSER_WAIT_LONG = 30
 BROWSER_WAIT_EXTRA_LONG = 60
 
 
-class NetgearRAXE500AP(WifiRetailAP):
-    """Class that implements Netgear RAXE500 AP.
+class NetgearRS700AP(WifiRetailAP):
+    """Class that implements Netgear RS700 AP.
 
     Since most of the class' implementation is shared with the R7000, this
     class inherits from NetgearR7000AP and simply redefines config parameters
@@ -84,17 +84,11 @@ class NetgearRAXE500AP(WifiRetailAP):
                 '6G': ['6g' + str(ch) for ch in numpy.arange(37, 222, 16)]
             },
             'modes': {
-                '2G': ['VHT20', 'VHT40', 'HE20', 'HE40'],
-                '5G_1': [
-                    'VHT20', 'VHT40', 'VHT80', 'VHT160', 'HE20', 'HE40',
-                    'HE80', 'HE160'
-                ],
-                '6G': [
-                    'VHT20', 'VHT40', 'VHT80', 'VHT160', 'HE20', 'HE40',
-                    'HE80', 'HE160'
-                ]
+                '2G': ['EHT20', 'EHT40'],
+                '5G_1': ['EHT40', 'EHT80', 'EHT160'],
+                '6G': ['EHT40', 'EHT80', 'EHT160', 'EHT320']
             },
-            'default_mode': 'HE'
+            'default_mode': 'EHT'
         }
         for interface in self.capabilities['interfaces']:
             self.ap_settings[interface] = {}
@@ -116,57 +110,32 @@ class NetgearRAXE500AP(WifiRetailAP):
 
         self.bw_mode_text = {
             '2G': {
-                'g and b': 'Up to 54 Mbps',
-                'HE20': 'Up to 600 Mbps',
-                'HE40': 'Up to 1200 Mbps',
-                'VHT20': 'Up to 433 Mbps',
-                'VHT40': 'Up to 1000 Mbps'
+                'EHT20': 'Up to 0.7 Gbps',
+                'EHT40': 'Up to 1.4 Gbps',
             },
             '5G_1': {
-                'HE20': 'Up to 600 Mbps',
-                'HE40': 'Up to 1200 Mbps',
-                'HE80': 'Up to 2400 Mbps',
-                'HE160': 'Up to 4800 Mbps',
-                'VHT20': 'Up to 433 Mbps',
-                'VHT40': 'Up to 1000 Mbps',
-                'VHT80': 'Up to 2165 Mbps',
-                'VHT160': 'Up to 4330 Mbps'
+                'EHT40': 'Up to 1.4 Gbps',
+                'EHT80': 'Up to 2.9 Gbps',
+                'EHT160': 'Up to 5.8 Gbps'
             },
             '6G': {
-                'HE20': 'Up to 600 Mbps',
-                'HE40': 'Up to 1200 Mbps',
-                'HE80': 'Up to 2400 Mbps',
-                'HE160': 'Up to 4800 Mbps',
-                'VHT20': 'Up to 600 Mbps',
-                'VHT40': 'Up to 1200 Mbps',
-                'VHT80': 'Up to 2400 Mbps',
-                'VHT160': 'Up to 4800 Mbps'
+                'EHT40': 'Up to 1.4 Gbps',
+                'EHT80': 'Up to 2.9 Gbps',
+                'EHT160': 'Up to 5.8 Gbps',
+                'EHT320': 'Up to 11.5 Gbps',
             }
         }
         self.bw_mode_values = {
-            # first key is a boolean indicating if 11ax is enabled
-            0: {
-                'g and b': '11g',
-                'HT20': 'VHT20',
-                'HT40': 'VHT40',
-                'HT80': 'VHT80',
-                'HT160': 'VHT160'
-            },
-            1: {
-                'g and b': '11g',
-                'HT20': 'HE20',
-                'HT40': 'HE40',
-                'HT80': 'HE80',
-                'HT160': 'HE160'
-            }
+            'HT20': 'EHT20',
+            'HT40': 'EHT40',
+            'HT80': 'EHT80',
+            'HT160': 'EHT160',
+            'HT320': 'EHT320'
         }
 
         # Config ordering intentional to avoid GUI bugs
         self.config_page_fields = collections.OrderedDict([
-            ('region', 'WRegion'), ('enable_ax', 'enable_he'),
-            (('2G', 'status'), 'enable_ap'),
-            (('5G_1', 'status'), 'enable_ap_an'),
-            (('6G', 'status'), 'enable_ap_an_2'), (('2G', 'ssid'), 'ssid'),
+            ('region', 'WRegion'), (('2G', 'ssid'), 'ssid'),
             (('5G_1', 'ssid'), 'ssid_an'), (('6G', 'ssid'), 'ssid_an_2'),
             (('2G', 'channel'), 'w_channel'),
             (('5G_1', 'channel'), 'w_channel_an'),
@@ -213,25 +182,6 @@ class NetgearRAXE500AP(WifiRetailAP):
             raise RuntimeError('{} mode is not supported on {} interface.'.format(
                 bandwidth, network))
         setting_to_update[network]['bandwidth'] = str(bandwidth)
-        setting_to_update['enable_ax'] = int('HE' in bandwidth)
-        # Check if other interfaces need to be changed too
-        requested_mode = 'HE' if 'HE' in bandwidth else 'VHT'
-        for other_network in self.capabilities['interfaces']:
-            if other_network == network:
-                continue
-            other_mode = 'HE' if 'HE' in self.ap_settings[other_network][
-                'bandwidth'] else 'VHT'
-            other_bw = ''.join([
-                x for x in self.ap_settings[other_network]['bandwidth']
-                if x.isdigit()
-            ])
-            if other_mode != requested_mode:
-                updated_mode = '{}{}'.format(requested_mode, other_bw)
-                self.log.warning('All networks must be VHT or HE. '
-                                 'Updating {} to {}'.format(
-                                     other_network, updated_mode))
-                setting_to_update.setdefault(other_network, {})
-                setting_to_update[other_network]['bandwidth'] = updated_mode
         return setting_to_update
 
     def set_bandwidth(self, network, bandwidth):
@@ -295,41 +245,23 @@ class NetgearRAXE500AP(WifiRetailAP):
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
 
             for field_key, field_name in self.config_page_fields.items():
-                if 'status' in field_key:
-                    browser.visit_persistent(self.config_page_advanced,
-                                             BROWSER_WAIT_MED, 10)
-                    field_value = browser.get_element_value(field_name)
+                field_value = browser.get_element_value(field_name)
+                if 'bandwidth' in field_key:
+                    self.ap_settings[field_key[0]][
+                        field_key[1]] = self.bw_mode_values[field_value]
+                elif 'region' in field_key:
+                    self.ap_settings['region'] = self.region_map[field_value]
+                elif 'security_type' in field_key:
+                    self.ap_settings[field_key[0]][field_key[1]] = field_value
+                elif 'channel' in field_key:
                     self.ap_settings[field_key[0]][field_key[1]] = int(
                         field_value)
-                    browser.visit_persistent(self.config_page,
-                                             BROWSER_WAIT_MED, 10)
                 else:
-                    field_value = browser.get_element_value(field_name)
-                    if 'enable_ax' in field_key:
-                        self.ap_settings[field_key] = int(field_value)
-                    elif 'bandwidth' in field_key:
-                        self.ap_settings[field_key[0]][
-                            field_key[1]] = self.bw_mode_values[
-                                self.ap_settings['enable_ax']][field_value]
-                    elif 'region' in field_key:
-                        self.ap_settings['region'] = self.region_map[
-                            field_value]
-                    elif 'security_type' in field_key:
-                        self.ap_settings[field_key[0]][
-                            field_key[1]] = field_value
-                    elif 'channel' in field_key:
-                        self.ap_settings[field_key[0]][field_key[1]] = int(
-                            field_value)
-                    else:
-                        self.ap_settings[field_key[0]][
-                            field_key[1]] = field_value
+                    self.ap_settings[field_key[0]][field_key[1]] = field_value
         return self.ap_settings.copy()
 
     def configure_ap(self, **config_flags):
         """Function to configure ap wireless settings."""
-        # Turn radios on or off
-        if config_flags['status_toggled']:
-            self.configure_radio_on_off()
         # Configure radios
         with BlockingBrowser(self.ap_settings['headless_browser'],
                              900) as browser:
@@ -346,10 +278,7 @@ class NetgearRAXE500AP(WifiRetailAP):
             else:
                 self.log.warning('Cannot change region.')
             for field_key, field_name in self.config_page_fields.items():
-                if 'enable_ax' in field_key:
-                    browser.set_element_value(field_name,
-                                              self.ap_settings['enable_ax'])
-                elif 'bandwidth' in field_key:
+                if 'bandwidth' in field_key:
                     try:
                         browser.set_element_value(
                             field_name,
@@ -391,27 +320,5 @@ class NetgearRAXE500AP(WifiRetailAP):
             browser.click_button('Apply')
             browser.accept_alert_if_present(BROWSER_WAIT_SHORT)
             time.sleep(BROWSER_WAIT_SHORT)
-            browser.visit_persistent(self.config_page, BROWSER_WAIT_EXTRA_LONG,
-                                     10)
-
-    def configure_radio_on_off(self):
-        """Helper configuration function to turn radios on/off."""
-        with BlockingBrowser(self.ap_settings['headless_browser'],
-                             900) as browser:
-            # Visit URL
-            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
-            browser.visit_persistent(self.config_page_advanced,
-                                     BROWSER_WAIT_MED, 10)
-
-            # Turn radios on or off
-            for field_key, field_name in self.config_page_fields.items():
-                if 'status' in field_key:
-                    browser.set_element_value(
-                        field_name,
-                        self.ap_settings[field_key[0]][field_key[1]])
-
-            time.sleep(BROWSER_WAIT_SHORT)
-            browser.click_button('Apply')
-            time.sleep(BROWSER_WAIT_EXTRA_LONG)
             browser.visit_persistent(self.config_page, BROWSER_WAIT_EXTRA_LONG,
                                      10)

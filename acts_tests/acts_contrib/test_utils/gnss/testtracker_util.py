@@ -1,7 +1,7 @@
 TEST_NAME_BY_TESTTRACKER_UUID = {
     # GnssFunctionTest
     "test_cs_first_fixed_system_server_restart": "8169c19d-ba2a-4fef-969b-87f793f4e699",
-    "test_cs_ttff_after_gps_service_restart": "247110d9-1c9e-429e-8e73-f16dd4a1ac74",
+    "test_recovery_and_location_time_after_gnss_services_restart": "247110d9-1c9e-429e-8e73-f16dd4a1ac74",
     "test_gnss_one_hour_tracking": "b3d20ecb-3727-48ed-8a03-19694cc726c1",
     "test_duty_cycle_function": "0bbfb818-da93-41d7-8d83-15bc53d8d2cf",
     "test_gnss_init_error": "c661780d-4864-4292-9988-88f64448fb78",
@@ -24,6 +24,7 @@ TEST_NAME_BY_TESTTRACKER_UUID = {
     "test_measure_adr_rate_after_10_mins_tracking": "7ebf3b52-229a-4eaf-bbff-7c527e4a1d7c",
     "test_hal_crashing_should_resume_tracking": "0aee4450-edce-4e1a-8744-70d8c01937b0",
     "test_power_save_mode_should_apply_latest_measurement_setting": "59a14da2-40df-4106-a190-dcbcd2e877e0",
+    "test_the_diff_of_gps_clock_and_elapsed_realtime_should_be_stable": "ea6ba987-216c-4cd0-89bc-eace8a691210",
     # GnssConcurrencyTest
     "test_gnss_concurrency_location_1_chre_1": "cbd9ff54-4405-44a4-ac20-de33278406d1",
     "test_gnss_concurrency_location_1_chre_8": "ab56cb47-384e-4269-b2d8-6e80ce066de2",

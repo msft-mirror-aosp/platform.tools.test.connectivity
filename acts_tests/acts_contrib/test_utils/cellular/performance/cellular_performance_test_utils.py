@@ -17,7 +17,10 @@
 import collections
 import logging
 import os
+import re
 import time
+from queue import Empty
+from acts.controllers.android_lib.tel import tel_utils
 
 PCC_PRESET_MAPPING = {
     'N257': {
@@ -65,6 +68,7 @@ DUPLEX_MODE_TO_BAND_MAPPING = {
     },
 }
 
+LONG_SLEEP = 10
 
 def extract_test_id(testcase_params, id_fields):
     test_id = collections.OrderedDict(
@@ -228,3 +232,313 @@ def log_system_power_metrics(ad, verbose=1):
             battery_meaurements['bat_{}'.format(par)] = ad.adb.shell(
                 'cat /sys/class/power_supply/maxfg/{}'.format(par))
         logging.debug('Battery readings: {}'.format(battery_meaurements))
+
+
+def send_at_command(ad, at_command):
+    at_cmd_output = ad.adb.shell('am instrument -w -e request {} -e response wait '
+                                 '"com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'.format(at_command))
+    return at_cmd_output
+
+def get_rx_measurements(ad, cell_type):
+    cell_type_int = 7 if cell_type == 'LTE' else 8
+    rx_meas = send_at_command(ad, 'AT+GOOGGETRXMEAS\={}?'.format(cell_type_int))
+    rsrp_regex = r"RSRP\[\d+\]\s+(-?\d+)"
+    rsrp_values = [float(x) for x in re.findall(rsrp_regex, rx_meas)]
+    rsrq_regex = r"RSRQ\[\d+\]\s+(-?\d+)"
+    rsrq_values = [float(x) for x in re.findall(rsrq_regex, rx_meas)]
+    rssi_regex = r"RSSI\[\d+\]\s+(-?\d+)"
+    rssi_values = [float(x) for x in re.findall(rssi_regex, rx_meas)]
+    sinr_regex = r"SINR\[\d+\]\s+(-?\d+)"
+    sinr_values = [float(x) for x in re.findall(sinr_regex, rx_meas)]
+    return {'rsrp': rsrp_values, 'rsrq': rsrq_values, 'rssi': rssi_values, 'sinr': sinr_values}
+
+def toggle_airplane_mode(log, ad, new_state=None, strict_checking=True, try_index=0):
+    """ Toggle the state of airplane mode.
+
+    Args:
+        log: log handler.
+        ad: android_device object.
+        new_state: Airplane mode state to set to.
+            If None, opposite of the current state.
+        strict_checking: Whether to turn on strict checking that checks all features.
+        try_index: index of apm toggle
+
+    Returns:
+        result: True if operation succeed. False if error happens.
+    """
+    if try_index % 2 == 0:
+        log.info('Toggling airplane mode {} by adb.'.format(new_state))
+        return tel_utils.toggle_airplane_mode_by_adb(log, ad, new_state)
+    else:
+        log.info('Toggling airplane mode {} by msim.'.format(new_state))
+        return toggle_airplane_mode_msim(
+            log, ad, new_state, strict_checking=strict_checking)
+
+def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
+    """ Toggle the state of airplane mode.
+
+    Args:
+        log: log handler.
+        ad: android_device object.
+        new_state: Airplane mode state to set to.
+            If None, opposite of the current state.
+        strict_checking: Whether to turn on strict checking that checks all features.
+
+    Returns:
+        result: True if operation succeed. False if error happens.
+    """
+
+    cur_state = ad.droid.connectivityCheckAirplaneMode()
+    if cur_state == new_state:
+        ad.log.info("Airplane mode already in %s", new_state)
+        return True
+    elif new_state is None:
+        new_state = not cur_state
+        ad.log.info("Toggle APM mode, from current tate %s to %s", cur_state,
+                    new_state)
+    sub_id_list = []
+    active_sub_info = ad.droid.subscriptionGetAllSubInfoList()
+    if active_sub_info:
+        for info in active_sub_info:
+            sub_id_list.append(info['subscriptionId'])
+
+    ad.ed.clear_all_events()
+    time.sleep(0.1)
+    service_state_list = []
+    if new_state:
+        service_state_list.append(tel_utils.SERVICE_STATE_POWER_OFF)
+        ad.log.info("Turn on airplane mode")
+
+    else:
+        # If either one of these 3 events show up, it should be OK.
+        # Normal SIM, phone in service
+        service_state_list.append(tel_utils.SERVICE_STATE_IN_SERVICE)
+        # NO SIM, or Dead SIM, or no Roaming coverage.
+        service_state_list.append(tel_utils.SERVICE_STATE_OUT_OF_SERVICE)
+        service_state_list.append(tel_utils.SERVICE_STATE_EMERGENCY_ONLY)
+        ad.log.info("Turn off airplane mode")
+
+    for sub_id in sub_id_list:
+        ad.droid.telephonyStartTrackingServiceStateChangeForSubscription(
+            sub_id)
+
+    timeout_time = time.time() + LONG_SLEEP
+    ad.droid.connectivityToggleAirplaneMode(new_state)
+
+    try:
+        try:
+            event = ad.ed.wait_for_event(
+                tel_utils.EVENT_SERVICE_STATE_CHANGED,
+                tel_utils.is_event_match_for_list,
+                timeout= LONG_SLEEP,
+                field=tel_utils.ServiceStateContainer.SERVICE_STATE,
+                value_list=service_state_list)
+            ad.log.info("Got event %s", event)
+        except Empty:
+            ad.log.warning("Did not get expected service state change to %s",
+                           service_state_list)
+        finally:
+            for sub_id in sub_id_list:
+                ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
+                    sub_id)
+    except Exception as e:
+        ad.log.error(e)
+
+    # APM on (new_state=True) will turn off bluetooth but may not turn it on
+    try:
+        if new_state and not tel_utils._wait_for_bluetooth_in_state(
+                log, ad, False, timeout_time - time.time()):
+            ad.log.error(
+                "Failed waiting for bluetooth during airplane mode toggle")
+            if strict_checking: return False
+    except Exception as e:
+        ad.log.error("Failed to check bluetooth state due to %s", e)
+        if strict_checking:
+            raise
+
+    # APM on (new_state=True) will turn off wifi but may not turn it on
+    if new_state and not tel_utils._wait_for_wifi_in_state(log, ad, False,
+                                                 timeout_time - time.time()):
+        ad.log.error("Failed waiting for wifi during airplane mode toggle on")
+        if strict_checking: return False
+
+    if ad.droid.connectivityCheckAirplaneMode() != new_state:
+        ad.log.error("Set airplane mode to %s failed", new_state)
+        return False
+    return True
+
+def generate_endc_combo_config_from_string(endc_combo_str):
+    """Function to generate ENDC combo config from combo string
+
+    Args:
+        endc_combo_str: ENDC combo descriptor (e.g. B48A[4];A[1]+N5A[2];A[1])
+    Returns:
+        endc_combo_config: dictionary with all ENDC combo settings
+    """
+    endc_combo_config = collections.OrderedDict()
+    endc_combo_config['endc_combo_name']=endc_combo_str
+    endc_combo_str = endc_combo_str.replace(' ', '')
+    endc_combo_list = endc_combo_str.split('+')
+    cell_config_list = list()
+    lte_cell_count = 0
+    nr_cell_count = 0
+    lte_scc_list = []
+    nr_dl_carriers = []
+    nr_ul_carriers = []
+    lte_dl_carriers = []
+    lte_ul_carriers = []
+
+    cell_config_regex = re.compile(
+        r'(?P<cell_type>[B,N])(?P<band>[0-9]+)(?P<bandwidth_class>[A-Z])\[bw=(?P<dl_bandwidth>[0-9]+)\]'
+        r'(\[ch=)?(?P<channel>[0-9]+)?\]?\[ant=(?P<dl_mimo_config>[0-9]+),?(?P<transmission_mode>[TM0-9]+)?\];?'
+        r'(?P<ul_bandwidth_class>[A-Z])?(\[ant=)?(?P<ul_mimo_config>[0-9])?(\])?'
+    )
+    for cell_string in endc_combo_list:
+        cell_config = re.match(cell_config_regex, cell_string).groupdict()
+        if cell_config['cell_type'] == 'B':
+            # Configure LTE specific parameters
+            cell_config['cell_type'] = 'LTE'
+            lte_cell_count = lte_cell_count + 1
+            cell_config['cell_number'] = lte_cell_count
+            if cell_config['cell_number'] == 1:
+                cell_config['pcc'] = 1
+                endc_combo_config['lte_pcc'] = cell_config['cell_number']
+            else:
+                cell_config['pcc'] = 0
+                lte_scc_list.append(cell_config['cell_number'])
+            cell_config['duplex_mode'] = 'FDD' if int(
+                cell_config['band']
+            ) in DUPLEX_MODE_TO_BAND_MAPPING['LTE'][
+                'FDD'] else 'TDD'
+            cell_config['dl_mimo_config'] = 'D{nss}U{nss}'.format(
+                nss=cell_config['dl_mimo_config'])
+            lte_dl_carriers.append(cell_config['cell_number'])
+        else:
+            # Configure NR specific parameters
+            cell_config['cell_type'] = 'NR5G'
+            nr_cell_count = nr_cell_count + 1
+            cell_config['cell_number'] = nr_cell_count
+            nr_dl_carriers.append(cell_config['cell_number'])
+            #TODO: fix NSA/SA indicator
+            cell_config['nr_cell_type'] = 'NSA'
+            cell_config['band'] = 'N' + cell_config['band']
+            cell_config['duplex_mode'] = 'FDD' if cell_config[
+                'band'] in DUPLEX_MODE_TO_BAND_MAPPING['NR5G'][
+                    'FDD'] else 'TDD'
+            cell_config['subcarrier_spacing'] = 'MU0' if cell_config[
+                'duplex_mode'] == 'FDD' else 'MU1'
+            cell_config['dl_mimo_config'] = 'N{nss}X{nss}'.format(
+                nss=cell_config['dl_mimo_config'])
+
+        cell_config['dl_bandwidth_class'] = cell_config['bandwidth_class']
+        cell_config['dl_bandwidth'] = 'BW'+ cell_config['dl_bandwidth']
+        cell_config['ul_enabled'] = 1 if cell_config['ul_bandwidth_class'] else 0
+        if cell_config['ul_enabled']:
+            cell_config['ul_mimo_config'] = 'N{nss}X{nss}'.format(
+                nss=cell_config['ul_mimo_config'])
+            if cell_config['cell_type'] == 'LTE':
+                lte_ul_carriers.append(cell_config['cell_number'])
+            elif cell_config['cell_type'] == 'NR5G':
+                nr_ul_carriers.append(cell_config['cell_number'])
+        cell_config_list.append(cell_config)
+    endc_combo_config['lte_cell_count'] = lte_cell_count
+    endc_combo_config['nr_cell_count'] = nr_cell_count
+    endc_combo_config['nr_dl_carriers'] = nr_dl_carriers
+    endc_combo_config['nr_ul_carriers'] = nr_ul_carriers
+    endc_combo_config['cell_list'] = cell_config_list
+    endc_combo_config['lte_scc_list'] = lte_scc_list
+    endc_combo_config['lte_dl_carriers'] = lte_dl_carriers
+    endc_combo_config['lte_ul_carriers'] = lte_ul_carriers
+    return endc_combo_config
+
+def generate_endc_combo_config_from_csv_row(test_config):
+    """Function to generate ENDC combo config from CSV test config
+
+    Args:
+        test_config: dict containing ENDC combo config from CSV
+    Returns:
+        endc_combo_config: dictionary with all ENDC combo settings
+    """
+    endc_combo_config = collections.OrderedDict()
+    lte_cell_count = 0
+    nr_cell_count = 0
+    lte_scc_list = []
+    nr_dl_carriers = []
+    nr_ul_carriers = []
+    lte_dl_carriers = []
+    lte_ul_carriers = []
+
+    cell_config_list = []
+    if test_config['lte_band']:
+        lte_cell = {
+            'cell_type':
+            'LTE',
+            'cell_number':
+            1,
+            'pcc':
+            1,
+            'band':
+            test_config['lte_band'],
+            'dl_bandwidth':
+            test_config['lte_bandwidth'],
+            'ul_enabled':
+            1,
+            'duplex_mode':
+            test_config['lte_duplex_mode'],
+            'dl_mimo_config':
+            'D{nss}U{nss}'.format(nss=test_config['lte_dl_mimo_config']),
+            'ul_mimo_config':
+            'D{nss}U{nss}'.format(nss=test_config['lte_ul_mimo_config'])
+        }
+        if int(test_config['lte_dl_mimo_config']) == 1:
+            lte_cell['transmission_mode'] = 'TM1'
+        elif int(test_config['lte_dl_mimo_config']) == 2:
+            lte_cell['transmission_mode'] = 'TM2'
+        else:
+            lte_cell['transmission_mode'] = 'TM3'
+        cell_config_list.append(lte_cell)
+        endc_combo_config['lte_pcc'] = 1
+        lte_cell_count = 1
+        lte_dl_carriers = [1]
+        lte_ul_carriers = [1]
+
+    if test_config['nr_band']:
+        nr_cell = {
+            'cell_type':
+            'NR5G',
+            'cell_number':
+            1,
+            'band':
+            test_config['nr_band'],
+            'nr_cell_type': test_config['nr_cell_type'],
+            'duplex_mode':
+            test_config['nr_duplex_mode'],
+            'dl_mimo_config':
+            'N{nss}X{nss}'.format(nss=test_config['nr_dl_mimo_config']),
+            'dl_bandwidth_class':
+            'A',
+            'dl_bandwidth':
+            test_config['nr_bandwidth'],
+            'ul_enabled':
+            1,
+            'ul_bandwidth_class':
+            'A',
+            'ul_mimo_config':
+            'N{nss}X{nss}'.format(nss=test_config['nr_ul_mimo_config']),
+            'subcarrier_spacing':
+            'MU0' if test_config['nr_scs'] == '15' else 'MU1'
+        }
+        cell_config_list.append(nr_cell)
+        nr_cell_count = 1
+        nr_dl_carriers = [1]
+        nr_ul_carriers = [1]
+
+    endc_combo_config['lte_cell_count'] = lte_cell_count
+    endc_combo_config['nr_cell_count'] = nr_cell_count
+    endc_combo_config['nr_dl_carriers'] = nr_dl_carriers
+    endc_combo_config['nr_ul_carriers'] = nr_ul_carriers
+    endc_combo_config['cell_list'] = cell_config_list
+    endc_combo_config['lte_scc_list'] = lte_scc_list
+    endc_combo_config['lte_dl_carriers'] = lte_dl_carriers
+    endc_combo_config['lte_ul_carriers'] = lte_ul_carriers
+    return endc_combo_config

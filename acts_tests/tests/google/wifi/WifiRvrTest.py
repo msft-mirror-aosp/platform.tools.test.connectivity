@@ -1097,6 +1097,19 @@ class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
             self.generate_test_cases(['6g37'], ['bw160'],
                                      list(range(0, 360, 45)), ['TCP'], ['DL']))
 
+class WifiOtaRvr_SampleChannel_UDP_Test(WifiOtaRvrTest):
+
+    def __init__(self, controllers):
+        WifiOtaRvrTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases([6], ['bw20'],
+                                              list(range(0, 360, 45)), ['UDP'],
+                                              ['DL', 'UL'])
+        self.tests.extend(
+            self.generate_test_cases([36, 149], ['bw80', 'bw160'],
+                                     list(range(0, 360, 45)), ['UDP'], ['DL', 'UL']))
+        self.tests.extend(
+            self.generate_test_cases(['6g37'], ['bw160'],
+                                     list(range(0, 360, 45)), ['UDP'], ['DL', 'UL']))
 
 class WifiOtaRvr_SingleOrientation_Test(WifiOtaRvrTest):
 

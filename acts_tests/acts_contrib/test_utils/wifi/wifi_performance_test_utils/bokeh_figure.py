@@ -72,6 +72,7 @@ class BokehFigure():
                  title_size='15pt',
                  axis_label_size='12pt',
                  legend_label_size='12pt',
+                 legend_location = 'top_right',
                  axis_tick_label_size='12pt',
                  x_axis_type='auto',
                  sizing_mode='scale_both',
@@ -91,6 +92,7 @@ class BokehFigure():
                 'title_size': title_size,
                 'axis_label_size': axis_label_size,
                 'legend_label_size': legend_label_size,
+                'legend_location': legend_location,
                 'axis_tick_label_size': axis_tick_label_size,
                 'x_axis_type': x_axis_type,
                 'sizing_mode': sizing_mode
@@ -305,7 +307,7 @@ class BokehFigure():
                     axis_label_text_font_size=self.
                     fig_property['axis_label_size']), 'right')
         # plot formatting
-        self.plot.legend.location = 'top_right'
+        self.plot.legend.location = self.fig_property['legend_location']
         self.plot.legend.click_policy = 'hide'
         self.plot.title.text_font_size = self.fig_property['title_size']
         self.plot.legend.label_text_font_size = self.fig_property[
